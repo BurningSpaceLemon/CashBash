@@ -1,0 +1,1518 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000a1b" />
+  <meta name="color-scheme" content="dark" />
+
+  <title>CashBash</title>
+  <meta name="description" content="Local‑First Reiseausgaben teilen. Ende‑zu‑Ende verschlüsselt. Offline‑fähig." />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --dark-blue:   #000a1b;
+      --bright-blue: #1296FF;
+      --cyan:        #12FFF1;
+      --pink:        #FF1296;
+      --white:       #FFFFFF;
+
+      --muted: rgba(255,255,255,.72);
+      --muted2: rgba(255,255,255,.45);
+      --line: rgba(18,150,255,.22);
+      --card: rgba(18,150,255,.06);
+      --card2: rgba(18,255,241,.06);
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r: 14px;
+      --r2: 10px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --safe-left: env(safe-area-inset-left);
+      --safe-right: env(safe-area-inset-right);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--white);
+      background:
+        radial-gradient(1200px 800px at 10% 5%, rgba(18,255,241,.09), transparent 55%),
+        radial-gradient(900px 700px at 90% 10%, rgba(255,18,150,.06), transparent 55%),
+        radial-gradient(1100px 900px at 65% 85%, rgba(18,150,255,.12), transparent 60%),
+        linear-gradient(180deg, #000816, var(--dark-blue));
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding-left: calc(16px + var(--safe-left));
+      padding-right: calc(16px + var(--safe-right));
+      padding-top: calc(12px + var(--safe-top));
+      padding-bottom: calc(90px + var(--safe-bottom));
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(0,10,27,.92), rgba(0,10,27,.64));
+      border-bottom: 1px solid rgba(18,150,255,.18);
+    }
+    .bar {
+      max-width: 980px;
+      margin: 0 auto;
+      padding:
+        calc(12px + var(--safe-top))
+        calc(16px + var(--safe-right))
+        12px
+        calc(16px + var(--safe-left));
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand { display:flex; align-items:baseline; gap:10px; }
+    .brand b { letter-spacing: .06em; font-weight: 800; }
+    .brand span { color: var(--muted2); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+
+    .status {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid rgba(18,150,255,.22);
+      border-radius: 999px;
+      background: rgba(18,150,255,.06);
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      min-width: 0;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 0 4px rgba(18,255,241,.15); }
+    .status small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .btn {
+      appearance: none;
+      border: 1.5px solid var(--bright-blue);
+      color: var(--bright-blue);
+      background: transparent;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+      letter-spacing: .01em;
+      line-height: 1;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:hover { background: var(--bright-blue); color: var(--dark-blue); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.secondary { border-color: rgba(18,255,241,.9); color: var(--cyan); }
+    .btn.secondary:hover { background: var(--cyan); color: var(--dark-blue); }
+    .btn.danger { border-color: rgba(255,18,150,.95); color: var(--pink); }
+    .btn.danger:hover { background: var(--pink); color: var(--dark-blue); }
+    .btn.ghost { border-color: rgba(18,150,255,.25); color: rgba(255,255,255,.88); }
+    .btn.ghost:hover { background: rgba(18,150,255,.2); color: var(--white); }
+
+    .btn.small { padding: 9px 10px; border-radius: 10px; font-weight: 700; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.70); }
+    h1 { margin: 0; font-size: 22px; line-height: 1.1; letter-spacing: -.02em; }
+    h2 { margin: 0; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.78); }
+    .sub { color: var(--muted); margin-top: 8px; line-height: 1.35; }
+
+    .pill {
+      border: 1px solid rgba(18,150,255,.24);
+      border-radius: 999px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(0,0,0,.10);
+    }
+    .pill b { font-size: 13px; }
+    .money { font-family: var(--mono); white-space: nowrap; }
+
+    .ledger-ribbon {
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(18,255,241,.25);
+      background: linear-gradient(90deg, rgba(18,255,241,.12), rgba(18,150,255,.10), rgba(255,18,150,.08));
+      padding: 12px 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ledger-ribbon:before {
+      content: "";
+      position: absolute; inset: -2px;
+      background: repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0px, rgba(255,255,255,.08) 2px, transparent 2px, transparent 8px);
+      opacity: .22;
+      transform: skewX(-12deg) translateX(-10%);
+      pointer-events: none;
+    }
+    .ledger-ribbon .row { position: relative; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .ledger-ribbon .row b { font-size: 13px; letter-spacing: .02em; }
+    .ledger-ribbon .row em { font-style: normal; color: rgba(255,255,255,.82); font-family: var(--mono); font-size: 12px; }
+
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+
+    label { display: block; font-size: 12px; color: rgba(255,255,255,.70); margin: 10px 0 6px; }
+    input, select {
+      width: 100%;
+      background: transparent;
+      color: var(--white);
+      border: 1.5px solid rgba(18,150,255,.35);
+      border-radius: 12px;
+      padding: 12px 12px;
+      outline: none;
+      transition: border-color .15s ease;
+      font-size: 16px; /* avoid iOS zoom */
+    }
+    input:focus, select:focus { border-color: var(--bright-blue); }
+    input::placeholder { color: rgba(255,255,255,.35); }
+
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(18,150,255,.25);
+      background: rgba(18,150,255,.06);
+      cursor: pointer;
+      color: rgba(255,255,255,.90);
+      font-weight: 700;
+      font-size: 12px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .tab[data-active="1"] { border-color: rgba(18,255,241,.55); box-shadow: 0 0 0 4px rgba(18,255,241,.10) inset; color: var(--white); }
+
+    .list {
+      margin-top: 14px;
+      border-radius: var(--r);
+      border: 1px solid rgba(18,150,255,.2);
+      overflow: hidden;
+      background: rgba(0,0,0,.12);
+    }
+    .list .head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(18,150,255,.18);
+      background: rgba(18,150,255,.05);
+    }
+    .list .head b { letter-spacing: .12em; text-transform: uppercase; font-size: 12px; color: rgba(255,255,255,.75); }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid rgba(18,150,255,.14); text-align: left; vertical-align: top; }
+    th { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.65); font-weight: 800; }
+    td { font-size: 13px; }
+
+    .small { font-size: 12px; color: rgba(255,255,255,.72); }
+    .muted { color: rgba(255,255,255,.70); }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(18,255,241,.28);
+      color: rgba(255,255,255,.9);
+      background: rgba(18,255,241,.07);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .kbd {
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 4px 7px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.18);
+      color: rgba(255,255,255,.85);
+      background: rgba(0,0,0,.18);
+    }
+
+    .toast {
+      position: fixed;
+      left: calc(14px + var(--safe-left));
+      right: calc(14px + var(--safe-right));
+      bottom: calc(14px + var(--safe-bottom));
+      z-index: 200;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(18,255,241,.30);
+      background: rgba(0,10,27,.76);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+      display: none;
+    }
+    .toast.show { display: block; }
+
+    .bottomBar {
+      position: fixed;
+      left: 0; right: 0;
+      bottom: 0;
+      z-index: 70;
+      padding:
+        10px calc(14px + var(--safe-right))
+        calc(10px + var(--safe-bottom)) calc(14px + var(--safe-left));
+      background: linear-gradient(180deg, rgba(0,10,27,0), rgba(0,10,27,.86) 30%, rgba(0,10,27,.95));
+      border-top: 1px solid rgba(18,150,255,.18);
+      backdrop-filter: blur(10px);
+    }
+    .bottomInner {
+      max-width: 980px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    dialog {
+      width: min(720px, calc(100vw - 26px));
+      border: 1px solid rgba(18,150,255,.25);
+      border-radius: 18px;
+      background: rgba(0,10,27,.86);
+      backdrop-filter: blur(14px);
+      color: var(--white);
+      box-shadow: 0 26px 90px rgba(0,0,0,.65);
+      padding: 0;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.55); }
+    .modal { padding: 14px; }
+    .modalHead { display:flex; justify-content:space-between; align-items:center; gap: 10px; padding: 14px; border-bottom: 1px solid rgba(18,150,255,.18); }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .dangerText { color: rgba(255,18,150,.95); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .btn { transition: none; }
+      .ledger-ribbon:before { display:none; }
+    }
+
+    :focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 4px rgba(18,255,241,.18), 0 0 0 1px rgba(18,255,241,.65) inset;
+      border-radius: 12px;
+    }
+
+    /* Small screens: keep actions reachable */
+    @media (max-width: 520px) {
+      .status { display:none; }
+      h1 { font-size: 20px; }
+      .grid2 { grid-template-columns: 1fr; }
+      .row2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand" aria-label="CashBash">
+      <b>CashBash</b>
+      <span>local‑first · e2e</span>
+    </div>
+    <div class="status" aria-live="polite">
+      <div class="dot" id="syncDot"></div>
+      <small id="syncLabel">Wird initialisiert…</small>
+    </div>
+    <button class="btn ghost" id="btnProfile">Profil</button>
+  </div>
+</header>
+
+<main class="app" id="app" hidden>
+  <section class="card" id="activeTripCard">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div>
+        <div class="eyebrow">Aktive Reise</div>
+        <h1 id="tripTitle">—</h1>
+        <div class="sub" id="tripMeta">—</div>
+      </div>
+      <div style="text-align:right">
+        <div class="eyebrow">Du bist</div>
+        <div style="font-size:18px;font-weight:800" id="userName">—</div>
+        <div class="small" style="margin-top:6px">Device‑ID <span class="kbd" id="deviceId">—</span></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="pill"><b>Total</b><span class="money" id="totalSpent">—</span></div>
+      <div class="pill"><b>Wenn wir jetzt ausgleichen</b><span class="money" id="netNow">—</span></div>
+      <div class="pill"><b>Top‑Zahler:in</b><span class="money" id="topPayer">—</span></div>
+      <div class="pill"><b>Ausgaben</b><span class="money" id="expenseCount">—</span></div>
+    </div>
+
+    <div class="ledger-ribbon" aria-label="Ledger Ribbon">
+      <div class="row"><b>Ledger Ribbon</b><em id="ledgerHash">hash: —</em></div>
+      <div class="small" style="margin-top:6px;position:relative">
+        Jede Änderung ist ein <b>Event</b> (Create / Edit‑Event / Voiding). Das macht Sync & Audit stabil.
+      </div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <div class="eyebrow">Startseite</div>
+    <h1 style="margin-top:4px">Ausgabe erfassen</h1>
+    <div class="sub">Du landest immer hier, wenn eine aktive Reise existiert.</div>
+
+    <div class="row2" style="margin-top:12px">
+      <div>
+        <label for="amount">Betrag</label>
+        <input id="amount" inputmode="decimal" placeholder="z.B. 42.50" />
+      </div>
+      <div>
+        <label for="ccy">Währung</label>
+        <select id="ccy"></select>
+      </div>
+    </div>
+
+    <label for="what">Wofür</label>
+    <input id="what" placeholder="Dinner, Uber, Museum…" />
+
+    <div class="row2">
+      <div>
+        <label for="payer">Gezahlt von</label>
+        <select id="payer"></select>
+      </div>
+      <div>
+        <label for="split">Split</label>
+        <select id="split">
+          <option value="equal">Gleichmäßig</option>
+          <option value="exact" disabled>Exakte Beträge (kommt als nächste Iteration)</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Teilnehmer:innen</label>
+    <div class="tabs" id="participants"></div>
+
+    <div class="small" style="margin-top:10px;color:rgba(255,255,255,.62)">
+      Hinweis: Für das MVP ist der Split „Gleichmäßig“. „Exakt/Prozent/Shares“ lässt sich als Event‑Typ ergänzen.
+    </div>
+  </section>
+
+  <section class="list" aria-label="Ausgabenliste">
+    <div class="head">
+      <b>Ausgaben (Events)</b>
+      <div class="small">Löschen = Voiding‑Event</div>
+    </div>
+    <div style="overflow:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>Zeit</th>
+            <th>Wofür</th>
+            <th>Gezahlt von</th>
+            <th>Betrag</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="expenses"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px;background: rgba(18,255,241,.055); border-color: rgba(18,255,241,.22)">
+    <div class="eyebrow">Wenn wir jetzt ausgleichen…</div>
+    <h1 style="margin-top:4px">Wer schuldet wem was</h1>
+    <div class="sub">Deterministisch berechnet aus dem Event‑Log.</div>
+
+    <div id="settlement" class="small" style="margin-top:10px">—</div>
+
+    <div style="margin-top:12px" class="small">
+      <b>Push:</b> iOS‑PWA Push ist eingeschränkt. Dieses MVP macht <b>Auto‑Sync beim Öffnen</b> und bei Aktivität.
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <h2>Ranking (wer am meisten gezahlt hat)</h2>
+    <div id="ranking" class="small" style="margin-top:10px">—</div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <h2>Reise verwalten</h2>
+    <div class="sub" style="margin-top:10px">Invite‑only via QR/Code, E2E. Relay puffert Ciphertext.</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn secondary" id="btnInvite">QR/Code‑Invite</button>
+      <button class="btn" id="btnJoin">Beitreten</button>
+      <button class="btn ghost" id="btnTrips">Reisen</button>
+      <button class="btn danger" id="btnSettle">Abschluss (ECB)</button>
+    </div>
+    <div class="small" style="margin-top:10px;color:rgba(255,255,255,.62)">
+      Abschluss: Abschlusswährung wählen → ECB‑Tageskurs abrufen → Kurs speichern → Snapshot erzeugen.
+    </div>
+  </section>
+</main>
+
+<div class="bottomBar" id="bottomBar" hidden>
+  <div class="bottomInner">
+    <button class="btn" id="btnAddExpense">Ausgabe hinzufügen</button>
+    <button class="btn ghost" id="btnQuickSettle">Saldo anzeigen</button>
+  </div>
+</div>
+
+<dialog id="modalProfile">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Profil</div>
+      <div style="font-weight:800">Name (global)</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <label for="profileName">Dein Name</label>
+    <input id="profileName" placeholder="z.B. Nils" />
+
+    <div class="small" style="margin-top:10px">
+      Dieser Name wird bei allen Reisen angezeigt. Intern nutzt CashBash IDs, damit Namen nicht kollidieren.
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn" id="btnSaveProfile">Speichern</button>
+      <button class="btn ghost" id="btnExport">Export (verschlüsselt) (coming soon)</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="modalInvite">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Invite</div>
+      <div style="font-weight:800">Reise beitreten</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small">Im MVP als Code. In der vollen Version: QR‑Code + Scan.</div>
+    <label for="inviteCode">Invite‑Code</label>
+    <input id="inviteCode" placeholder="wird generiert…" />
+
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn secondary" id="btnCopyInvite">Code kopieren</button>
+      <button class="btn" id="btnRefreshInvite">Neu generieren</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="modalJoin">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Beitreten</div>
+      <div style="font-weight:800">Invite eingeben</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small">Invite‑only. E2E: der Invite transportiert Reise‑Info (verschlüsselt) + Relay‑Topic.</div>
+    <label for="joinCode">Invite‑Code</label>
+    <input id="joinCode" placeholder="Code einfügen" />
+
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn" id="btnDoJoin">Beitreten</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="modalTrips">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Reisen</div>
+      <div style="font-weight:800">Übersicht</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small">Mehrere Reisen werden lokal gespeichert; Geräte sind je Reise separat verknüpft.</div>
+    <div id="tripList" style="margin-top:10px"></div>
+
+    <div style="margin-top:12px">
+      <button class="btn" id="btnNewTrip">Neue Reise anlegen</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="modalSettle">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Abschluss</div>
+      <div style="font-weight:800">ECB Tageskurs</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small">Beim Abschluss wird der Tageskurs geladen und gespeichert (Snapshot). Fallback: letzter gespeicherter Kurs.</div>
+
+    <label for="settleCcy">Abschlusswährung</label>
+    <select id="settleCcy"></select>
+
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn" id="btnFetchEcb">ECB Kurs holen</button>
+      <button class="btn secondary" id="btnFinalize">Snapshot speichern</button>
+    </div>
+
+    <div class="small" style="margin-top:12px" id="ecbStatus">—</div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gun@0.2020.1241/gun.js"></script>
+<script>
+  // CashBash MVP (GitHub Pages):
+  // - Local-first: IndexedDB
+  // - E2E transport: ciphertext blobs only (simplified MVP encryption)
+  // - Sync: Gun.js relay (store-and-forward)
+  // NOTE: This MVP uses a passphrase-based trip key. A full version would use ECDH per member + proper key distribution.
+
+  // ---------- Utilities ----------
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'",'&#039;');
+  }
+
+  function randomId(prefix){
+    const a = crypto.getRandomValues(new Uint8Array(10));
+    return prefix + '_' + Array.from(a).map(x=>x.toString(16).padStart(2,'0')).join('');
+  }
+
+  function stableHash(str){
+    let h = 2166136261;
+    for (let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h>>>0).toString(16).padStart(8,'0');
+  }
+
+  function fmtMoney(amount, ccy){
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy }).format(amount);
+    } catch {
+      return `${amount.toFixed(2)} ${ccy}`;
+    }
+  }
+
+  // ---------- IndexedDB (tiny wrapper) ----------
+  const DB_NAME = 'cashbash_v1';
+  const DB_VER = 1;
+  const STORES = ['meta','trips','events','fx'];
+
+  function openDB(){
+    return new Promise((resolve, reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        for (const s of STORES){
+          if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGet(store, key){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const st = tx.objectStore(store);
+      const req = st.get(key);
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbSet(store, key, val){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.put(val, key);
+      req.onsuccess = ()=>resolve(true);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbDel(store, key){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.delete(key);
+      req.onsuccess = ()=>resolve(true);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbKeys(store){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const st = tx.objectStore(store);
+      const req = st.getAllKeys();
+      req.onsuccess = ()=>resolve(req.result || []);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  // ---------- Crypto (MVP: passphrase -> AES-GCM) ----------
+  async function pbkdf2Key(passphrase, saltBytes){
+    const enc = new TextEncoder();
+    const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      { name:'PBKDF2', salt: saltBytes, iterations: 120000, hash:'SHA-256' },
+      baseKey,
+      { name:'AES-GCM', length: 256 },
+      false,
+      ['encrypt','decrypt']
+    );
+  }
+
+  function b64(bytes){
+    let bin='';
+    bytes.forEach(b=>bin += String.fromCharCode(b));
+    return btoa(bin);
+  }
+  function unb64(s){
+    const bin = atob(s);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  async function encryptJSON(key, obj){
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const pt = new TextEncoder().encode(JSON.stringify(obj));
+    const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, pt);
+    return { iv: b64(iv), ct: b64(new Uint8Array(ct)) };
+  }
+
+  async function decryptJSON(key, blob){
+    const iv = unb64(blob.iv);
+    const ct = unb64(blob.ct);
+    const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct);
+    return JSON.parse(new TextDecoder().decode(pt));
+  }
+
+  // ---------- App State ----------
+  const state = {
+    user: { name: null, deviceId: null },
+    activeTripId: null,
+    trips: new Map(),
+    // derived at runtime
+    activeTrip: null,
+    tripKey: null,
+    gun: null,
+    gunNode: null,
+    lastSyncAt: null
+  };
+
+  const COMMON_CCY = ['EUR','USD','GBP','CHF','JPY','SEK','NOK','DKK','CAD','AUD','PLN','CZK','HUF'];
+
+  // ---------- Event Log Model ----------
+  // Event types:
+  // - ExpenseCreated { expenseId, amount, ccy, what, payerMemberId, participantMemberIds }
+  // - ExpenseVoided  { targetExpenseId }
+
+  function applyEvents(events){
+    const created = new Map();
+    const voided = new Set();
+
+    for (const e of events){
+      if (e.type === 'ExpenseCreated') created.set(e.data.expenseId, e);
+      if (e.type === 'ExpenseVoided') voided.add(e.data.targetExpenseId);
+    }
+
+    const expenses = [];
+    for (const [expenseId, ev] of created.entries()){
+      if (!voided.has(expenseId)) expenses.push(ev);
+    }
+    expenses.sort((a,b)=>a.t-b.t);
+    return expenses;
+  }
+
+  function computeBalancesBase(expenses, trip){
+    // MVP: treat all amounts as already base currency for settlement preview.
+    // Full version uses FX conversion snapshots.
+    const members = trip.members.map(m=>m.id);
+    const bal = new Map(members.map(id=>[id,0]));
+    for (const ev of expenses){
+      const d = ev.data;
+      const amount = d.amount;
+      const payer = d.payerMemberId;
+      const parts = d.participantMemberIds || [];
+      if (!parts.length) continue;
+      const share = amount / parts.length;
+      bal.set(payer, (bal.get(payer)||0) + amount);
+      for (const pid of parts){
+        bal.set(pid, (bal.get(pid)||0) - share);
+      }
+    }
+    // round
+    for (const [k,v] of bal.entries()) bal.set(k, Math.round(v*100)/100);
+    return bal;
+  }
+
+  function settlementTransfers(bal){
+    const creditors = [];
+    const debtors = [];
+    for (const [id,v] of bal.entries()){
+      if (v > 0.009) creditors.push({id, v});
+      else if (v < -0.009) debtors.push({id, v});
+    }
+    creditors.sort((a,b)=>b.v-a.v || a.id.localeCompare(b.id));
+    debtors.sort((a,b)=>a.v-b.v || a.id.localeCompare(b.id));
+
+    const transfers = [];
+    let i=0, j=0;
+    while (i<debtors.length && j<creditors.length){
+      const d = debtors[i];
+      const c = creditors[j];
+      const pay = Math.min(-d.v, c.v);
+      transfers.push({from:d.id, to:c.id, amount: Math.round(pay*100)/100});
+      d.v += pay;
+      c.v -= pay;
+      if (d.v > -0.009) i++;
+      if (c.v < 0.009) j++;
+    }
+    return transfers;
+  }
+
+  // ---------- Trips ----------
+  function defaultTrip(){
+    return {
+      id: randomId('trip'),
+      title: 'Neue Reise',
+      baseCurrency: 'EUR',
+      quickCurrencies: ['EUR','USD','GBP','CHF'],
+      // member ids are stable and unique
+      members: [
+        { id: randomId('m'), name: state.user.name }
+      ],
+      // relay topic for gun
+      relayTopic: randomId('topic')
+    };
+  }
+
+  function memberName(trip, id){
+    return trip.members.find(m=>m.id===id)?.name || id;
+  }
+
+  // ---------- Sync (Gun.js) ----------
+  // Strategy:
+  // - Each trip has relayTopic.
+  // - We publish encrypted event blobs keyed by eventId.
+  // - Receivers decrypt and store events locally.
+
+  function initGun(){
+    if (state.gun) return;
+    try {
+      state.gun = Gun({ peers: ['https://gun-manhattan.herokuapp.com/gun'] });
+    } catch (e){
+      console.warn('Gun init failed', e);
+    }
+  }
+
+  async function startTripSync(trip){
+    initGun();
+    if (!state.gun){
+      $('syncDot').style.background = 'rgba(255,255,255,.25)';
+      $('syncLabel').textContent = 'Offline (kein Relay)';
+      return;
+    }
+
+    // Derive trip key from stored passphrase.
+    const pass = await idbGet('meta', `tripPass:${trip.id}`);
+    if (!pass){
+      $('syncDot').style.background = 'rgba(255,255,255,.25)';
+      $('syncLabel').textContent = 'Sync pausiert (kein Schlüssel)';
+      return;
+    }
+
+    const salt = unb64(trip.keySaltB64);
+    state.tripKey = await pbkdf2Key(pass, salt);
+    state.gunNode = state.gun.get('cashbash').get(trip.relayTopic).get('events');
+
+    $('syncDot').style.background = 'var(--cyan)';
+    $('syncLabel').textContent = 'Sync aktiv (Relay)';
+
+    // Subscribe
+    state.gunNode.map().on(async (data, key) => {
+      if (!data || !data.iv || !data.ct) return;
+      try {
+        const ev = await decryptJSON(state.tripKey, data);
+        await upsertEvent(trip.id, ev, {fromSync:true});
+      } catch (e){
+        // ignore decrypt failures (wrong key or corrupted)
+      }
+    });
+  }
+
+  async function publishEvent(trip, ev){
+    if (!state.gunNode || !state.tripKey) return;
+    const blob = await encryptJSON(state.tripKey, ev);
+    // Store-and-forward: relay holds ciphertext
+    state.gunNode.get(ev.id).put(blob);
+  }
+
+  // ---------- Local storage of events ----------
+  async function tripEventKey(tripId, eventId){
+    return `${tripId}:${eventId}`;
+  }
+
+  async function upsertEvent(tripId, ev, {fromSync=false}={}){
+    await idbSet('events', await tripEventKey(tripId, ev.id), ev);
+    if (!fromSync && state.activeTrip && state.activeTrip.id === tripId) {
+      // publish
+      publishEvent(state.activeTrip, ev);
+    }
+    state.lastSyncAt = Date.now();
+    render();
+  }
+
+  async function loadTripEvents(tripId){
+    const keys = await idbKeys('events');
+    const events = [];
+    for (const k of keys){
+      if (String(k).startsWith(tripId + ':')){
+        const ev = await idbGet('events', k);
+        if (ev) events.push(ev);
+      }
+    }
+    events.sort((a,b)=>a.t-b.t);
+    return events;
+  }
+
+  // ---------- ECB FX Fetch ----------
+  // Minimal: fetch latest daily rates from ECB as XML.
+  // Endpoint (public): https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
+  // GitHub Pages: allowed via CORS? Often yes, but can be blocked. We store last rates and allow fallback.
+
+  async function fetchEcbDaily(){
+    const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error('ECB fetch failed');
+    const text = await res.text();
+    const xml = new DOMParser().parseFromString(text, 'text/xml');
+    const cubes = Array.from(xml.querySelectorAll('Cube[ currency ][ rate ]'));
+    const rates = { EUR: 1 };
+    for (const c of cubes){
+      const cur = c.getAttribute('currency');
+      const rate = parseFloat(c.getAttribute('rate'));
+      if (cur && Number.isFinite(rate)) rates[cur] = rate;
+    }
+    const dateNode = xml.querySelector('Cube[time]');
+    const date = dateNode?.getAttribute('time') || new Date().toISOString().slice(0,10);
+    return { date, rates, source: 'ECB' };
+  }
+
+  function convertViaEur(amount, from, to, rates){
+    // ECB rates are 1 EUR = rate * currency
+    // Convert: from -> EUR -> to
+    if (from === to) return amount;
+    if (!rates[from] || !rates[to]) throw new Error('Missing rate');
+    const eur = from === 'EUR' ? amount : (amount / rates[from]);
+    const out = to === 'EUR' ? eur : (eur * rates[to]);
+    return out;
+  }
+
+  // ---------- UI / Rendering ----------
+  function activeTrip(){ return state.activeTrip; }
+
+  function ledgerFingerprint(events){
+    const payload = JSON.stringify(events.map(e=>({id:e.id,t:e.t,type:e.type,ref:e.ref||null,data:e.data})))
+    return 'hash: ' + stableHash(payload);
+  }
+
+  async function ensureProfile(){
+    let name = await idbGet('meta','userName');
+    if (!name){
+      // first start
+      name = prompt('Dein Name (global):', '') || '';
+      name = name.trim();
+      if (!name){
+        name = 'Du';
+      }
+      await idbSet('meta','userName', name);
+    }
+    state.user.name = name;
+
+    let dev = await idbGet('meta','deviceId');
+    if (!dev){
+      dev = randomId('dev').slice(0, 14);
+      await idbSet('meta','deviceId', dev);
+    }
+    state.user.deviceId = dev;
+  }
+
+  async function ensureTrip(){
+    // load active trip
+    let active = await idbGet('meta','activeTripId');
+
+    if (!active){
+      // create first trip
+      const trip = defaultTrip();
+
+      // trip key passphrase (MVP) - generated and embedded into invite.
+      // Store passphrase locally; share via invite code to other devices.
+      const pass = randomId('key').slice(0, 22);
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      trip.keySaltB64 = b64(salt);
+
+      await idbSet('trips', trip.id, trip);
+      await idbSet('meta','activeTripId', trip.id);
+      await idbSet('meta', `tripPass:${trip.id}`, pass);
+
+      active = trip.id;
+      toast('Erste Reise erstellt.');
+    }
+
+    state.activeTripId = active;
+
+    // Load trips map
+    const keys = await idbKeys('trips');
+    state.trips = new Map();
+    for (const k of keys){
+      const t = await idbGet('trips', k);
+      if (t) state.trips.set(k, t);
+    }
+
+    state.activeTrip = state.trips.get(active);
+
+    // Ensure user is member
+    const hasMe = state.activeTrip.members.some(m => m.name === state.user.name);
+    if (!hasMe){
+      state.activeTrip.members.push({ id: randomId('m'), name: state.user.name });
+      await idbSet('trips', state.activeTrip.id, state.activeTrip);
+    }
+
+    await startTripSync(state.activeTrip);
+  }
+
+  function fillCcySelects(trip){
+    const csel = $('ccy');
+    csel.innerHTML = '';
+    const list = [...new Set([...trip.quickCurrencies, trip.baseCurrency, ...COMMON_CCY])];
+    for (const c of list){
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      csel.appendChild(o);
+    }
+
+    const settle = $('settleCcy');
+    settle.innerHTML = '';
+    for (const c of list){
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      settle.appendChild(o);
+    }
+    settle.value = trip.baseCurrency || 'EUR';
+  }
+
+  function fillPeople(trip){
+    const psel = $('payer');
+    psel.innerHTML = '';
+    for (const m of trip.members){
+      const o = document.createElement('option');
+      o.value = m.id; o.textContent = m.name;
+      psel.appendChild(o);
+    }
+
+    const chips = $('participants');
+    chips.innerHTML = '';
+    for (const m of trip.members){
+      const b = document.createElement('button');
+      b.className = 'tab';
+      b.textContent = m.name;
+      b.dataset.mid = m.id;
+      b.dataset.active = '1';
+      b.onclick = () => { b.dataset.active = (b.dataset.active==='1') ? '0' : '1'; };
+      chips.appendChild(b);
+    }
+  }
+
+  async function render(){
+    const trip = state.activeTrip;
+    if (!trip) return;
+
+    $('userName').textContent = state.user.name;
+    $('deviceId').textContent = state.user.deviceId;
+
+    $('tripTitle').textContent = trip.title;
+    $('tripMeta').innerHTML = `Basiswährung <span class="badge">${escapeHtml(trip.baseCurrency)}</span> · Schnellauswahl: ${escapeHtml(trip.quickCurrencies.join(', '))} · Abschlusswährung wählbar`;
+
+    fillCcySelects(trip);
+    fillPeople(trip);
+
+    const events = await loadTripEvents(trip.id);
+    const expenses = applyEvents(events);
+
+    $('expenseCount').textContent = `${expenses.length}`;
+    $('ledgerHash').textContent = ledgerFingerprint(events);
+
+    // Total (display): sum in original currencies is not meaningful.
+    // MVP: show sum of base-currency entries only, and count non-base.
+    let totalBase = 0;
+    let nonBase = 0;
+    for (const ev of expenses){
+      if (ev.data.ccy === trip.baseCurrency) totalBase += ev.data.amount;
+      else nonBase++;
+    }
+    $('totalSpent').textContent = `${fmtMoney(Math.round(totalBase*100)/100, trip.baseCurrency)}${nonBase? ` + ${nonBase} FX` : ''}`;
+
+    // Ranking (who paid most) - in base currency only for MVP.
+    const paid = new Map(trip.members.map(m=>[m.id,0]));
+    for (const ev of expenses){
+      const amt = (ev.data.ccy === trip.baseCurrency) ? ev.data.amount : 0;
+      paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + amt);
+    }
+    const ranking = [...paid.entries()].map(([id,amt])=>({id,amt})).sort((a,b)=>b.amt-a.amt);
+    const top = ranking[0];
+    $('topPayer').textContent = top ? `${memberName(trip, top.id)} · ${fmtMoney(top.amt, trip.baseCurrency)}` : '—';
+
+    // Settlement preview
+    const bal = computeBalancesBase(expenses.filter(e=>e.data.ccy===trip.baseCurrency), trip);
+    const myId = trip.members.find(m=>m.name===state.user.name)?.id;
+    const myBal = bal.get(myId) || 0;
+    $('netNow').textContent = (myBal>=0?'+':'') + fmtMoney(Math.abs(myBal), trip.baseCurrency).replace(/[\u00A0 ]?([A-Z]{3})$/, ' $1');
+
+    const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
+    if (!transfers.length){
+      $('settlement').innerHTML = '<span class="muted">Keine Transfers nötig (für Base‑Währung).</span>';
+    } else {
+      $('settlement').innerHTML = transfers.map(t=>{
+        return `<div style="display:flex;gap:10px;justify-content:space-between;align-items:baseline;margin:10px 0">
+          <div><b>${escapeHtml(memberName(trip, t.from))}</b> → <b>${escapeHtml(memberName(trip, t.to))}</b></div>
+          <div class="money">${escapeHtml(fmtMoney(t.amount, trip.baseCurrency))}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Ranking UI
+    $('ranking').innerHTML = ranking.map((r,idx)=>{
+      const max = ranking[0]?.amt || 1;
+      const bar = Math.min(100, Math.round((r.amt/max)*100));
+      return `
+        <div style="display:flex;align-items:center;gap:10px;margin:10px 0">
+          <span class="kbd" style="min-width:34px;text-align:center">${idx+1}</span>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;gap:10px">
+              <b>${escapeHtml(memberName(trip, r.id))}</b>
+              <span class="money">${escapeHtml(fmtMoney(r.amt, trip.baseCurrency))}</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px">
+              <div style="height:100%;width:${bar}%;background:linear-gradient(90deg, rgba(18,150,255,.95), rgba(18,255,241,.92))"></div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('') || '—';
+
+    // Expense list
+    const tbody = $('expenses');
+    tbody.innerHTML = '';
+    for (const ev of expenses){
+      const tr = document.createElement('tr');
+      const dt = new Date(ev.t);
+      const participants = (ev.data.participantMemberIds||[]).map(id=>memberName(trip,id)).join(', ');
+      tr.innerHTML = `
+        <td class="small">${escapeHtml(dt.toLocaleString())}</td>
+        <td><b>${escapeHtml(ev.data.what||'(ohne Titel)')}</b><div class="small muted">Teilnehmer:innen: ${escapeHtml(participants)}</div></td>
+        <td>${escapeHtml(memberName(trip, ev.data.payerMemberId))}</td>
+        <td class="money">${escapeHtml(fmtMoney(ev.data.amount, ev.data.ccy))}</td>
+        <td style="text-align:right"><button class="btn danger small" data-void="${escapeHtml(ev.data.expenseId)}">Void</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    tbody.querySelectorAll('button[data-void]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const target = btn.getAttribute('data-void');
+        const ev = { id: randomId('evt'), type: 'ExpenseVoided', t: Date.now(), ref: target, data: { targetExpenseId: target } };
+        await upsertEvent(trip.id, ev, {fromSync:false});
+        toast('Voiding‑Event gespeichert.');
+      });
+    });
+
+    // Sync status label detail
+    if (state.lastSyncAt){
+      const s = new Date(state.lastSyncAt).toLocaleTimeString();
+      $('syncLabel').textContent = `Sync aktiv · zuletzt ${s}`;
+    }
+  }
+
+  // ---------- Modals ----------
+  function wireModal(id){
+    const d = $(id);
+    d.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>d.close()));
+    return d;
+  }
+  const mProfile = wireModal('modalProfile');
+  const mInvite = wireModal('modalInvite');
+  const mJoin = wireModal('modalJoin');
+  const mTrips = wireModal('modalTrips');
+  const mSettle = wireModal('modalSettle');
+
+  // ---------- Actions ----------
+  async function addExpense(){
+    const trip = state.activeTrip;
+    const amount = parseFloat(($('amount').value||'').replace(',','.'));
+    const ccy = $('ccy').value;
+    const what = $('what').value.trim();
+    const payer = $('payer').value;
+    const participants = Array.from($('participants').querySelectorAll('.tab'))
+      .filter(b=>b.dataset.active==='1')
+      .map(b=>b.dataset.mid);
+
+    if (!Number.isFinite(amount) || amount <= 0){ toast('Bitte einen gültigen Betrag eingeben.'); return; }
+    if (!what){ toast('Bitte "Wofür" ausfüllen.'); return; }
+    if (!participants.length){ toast('Mindestens eine teilnehmende Person auswählen.'); return; }
+
+    const expenseId = randomId('x');
+    const ev = {
+      id: randomId('evt'),
+      type: 'ExpenseCreated',
+      t: Date.now(),
+      ref: null,
+      data: {
+        expenseId,
+        amount: Math.round(amount*100)/100,
+        ccy,
+        what,
+        payerMemberId: payer,
+        participantMemberIds: participants
+      }
+    };
+
+    await upsertEvent(trip.id, ev, {fromSync:false});
+
+    $('amount').value = '';
+    $('what').value = '';
+    toast('Ausgabe gespeichert.');
+  }
+
+  async function openProfile(){
+    $('profileName').value = state.user.name || '';
+    mProfile.showModal();
+  }
+
+  async function saveProfile(){
+    const name = ($('profileName').value||'').trim();
+    if (!name){ toast('Name darf nicht leer sein.'); return; }
+    state.user.name = name;
+    await idbSet('meta','userName', name);
+    mProfile.close();
+    toast('Profil gespeichert.');
+    // Ensure membership name is updated in current trip (append-only would use a Rename event; MVP updates object)
+    if (state.activeTrip){
+      // no-op in MVP
+    }
+    render();
+  }
+
+  async function openInvite(){
+    const trip = state.activeTrip;
+    const pass = await idbGet('meta', `tripPass:${trip.id}`);
+    // invite contains: tripId, relayTopic, keySalt, passphrase
+    const payload = {
+      v: 1,
+      tripId: trip.id,
+      relayTopic: trip.relayTopic,
+      keySaltB64: trip.keySaltB64,
+      pass,
+      title: trip.title,
+      baseCurrency: trip.baseCurrency,
+      quickCurrencies: trip.quickCurrencies,
+      members: trip.members
+    };
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    $('inviteCode').value = code;
+    mInvite.showModal();
+  }
+
+  async function copyInvite(){
+    const code = $('inviteCode').value;
+    try {
+      await navigator.clipboard.writeText(code);
+      toast('Invite‑Code kopiert.');
+    } catch {
+      toast('Kopieren nicht verfügbar — Code manuell markieren.');
+    }
+  }
+
+  async function refreshInvite(){
+    // new passphrase + topic
+    const trip = state.activeTrip;
+    trip.relayTopic = randomId('topic');
+    const pass = randomId('key').slice(0, 22);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    trip.keySaltB64 = b64(salt);
+    await idbSet('trips', trip.id, trip);
+    await idbSet('meta', `tripPass:${trip.id}`, pass);
+    toast('Invite erneuert.');
+    await openInvite();
+    await startTripSync(trip);
+  }
+
+  async function openJoin(){
+    $('joinCode').value = '';
+    mJoin.showModal();
+  }
+
+  async function doJoin(){
+    const code = ($('joinCode').value||'').trim();
+    if (!code){ toast('Bitte Invite‑Code einfügen.'); return; }
+    try {
+      const payload = JSON.parse(decodeURIComponent(escape(atob(code))));
+      if (!payload || payload.v !== 1) throw new Error('bad');
+
+      const trip = {
+        id: payload.tripId,
+        title: payload.title || 'Reise',
+        baseCurrency: payload.baseCurrency || 'EUR',
+        quickCurrencies: payload.quickCurrencies || ['EUR','USD','GBP','CHF'],
+        members: payload.members || [{id: randomId('m'), name: state.user.name}],
+        relayTopic: payload.relayTopic,
+        keySaltB64: payload.keySaltB64
+      };
+
+      await idbSet('trips', trip.id, trip);
+      await idbSet('meta','activeTripId', trip.id);
+      await idbSet('meta', `tripPass:${trip.id}`, payload.pass);
+
+      state.activeTripId = trip.id;
+      state.trips.set(trip.id, trip);
+      state.activeTrip = trip;
+
+      mJoin.close();
+      toast('Reise beigetreten.');
+      await startTripSync(trip);
+      render();
+
+    } catch (e){
+      toast('Invite‑Code ungültig.');
+    }
+  }
+
+  async function openTrips(){
+    const keys = [...state.trips.keys()];
+    if (!keys.length){ $('tripList').innerHTML = '<div class="small muted">Keine Reisen.</div>'; }
+    else {
+      $('tripList').innerHTML = keys.map(k=>{
+        const t = state.trips.get(k);
+        const active = (k === state.activeTripId);
+        return `
+          <div class="pill" style="margin:10px 0">
+            <div>
+              <b>${escapeHtml(t.title)}</b>
+              <div class="small muted">Basis: ${escapeHtml(t.baseCurrency)} · Mitglieder: ${t.members.length}</div>
+            </div>
+            <button class="btn ${active?'secondary':'ghost'} small" data-trip="${escapeHtml(t.id)}">${active?'Aktiv':'Aktivieren'}</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    $('tripList').querySelectorAll('button[data-trip]').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        const id = b.getAttribute('data-trip');
+        await idbSet('meta','activeTripId', id);
+        state.activeTripId = id;
+        state.activeTrip = state.trips.get(id);
+        toast('Aktive Reise gewechselt.');
+        mTrips.close();
+        await startTripSync(state.activeTrip);
+        render();
+      });
+    });
+
+    mTrips.showModal();
+  }
+
+  async function newTrip(){
+    const title = prompt('Name der Reise:', 'Reise') || '';
+    const t = defaultTrip();
+    t.title = title.trim() || 'Reise';
+
+    const base = prompt('Basiswährung (z.B. EUR):', 'EUR') || 'EUR';
+    t.baseCurrency = base.trim().toUpperCase() || 'EUR';
+
+    const quick = prompt('Schnellauswahl (kommagetrennt, z.B. EUR,USD,GBP):', 'EUR,USD,GBP,CHF') || '';
+    t.quickCurrencies = quick.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+    if (!t.quickCurrencies.includes(t.baseCurrency)) t.quickCurrencies.unshift(t.baseCurrency);
+
+    const pass = randomId('key').slice(0, 22);
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    t.keySaltB64 = b64(salt);
+
+    await idbSet('trips', t.id, t);
+    await idbSet('meta', `tripPass:${t.id}`, pass);
+    await idbSet('meta','activeTripId', t.id);
+
+    state.trips.set(t.id, t);
+    state.activeTripId = t.id;
+    state.activeTrip = t;
+
+    toast('Neue Reise erstellt.');
+    mTrips.close();
+    await startTripSync(t);
+    render();
+  }
+
+  async function openSettle(){
+    // default settlement ccy = trip base
+    $('settleCcy').value = state.activeTrip.baseCurrency || 'EUR';
+    $('ecbStatus').textContent = '—';
+    mSettle.showModal();
+  }
+
+  async function fetchEcb(){
+    $('ecbStatus').textContent = 'Hole ECB…';
+    try {
+      const daily = await fetchEcbDaily();
+      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+      await idbSet('meta','lastEcbDate', daily.date);
+      $('ecbStatus').textContent = `ECB OK · ${daily.date} · ${Object.keys(daily.rates).length} Währungen`;
+      toast('ECB Kurs geladen.');
+    } catch (e){
+      const lastDate = await idbGet('meta','lastEcbDate');
+      if (lastDate){
+        $('ecbStatus').textContent = `Offline/Fallback · letzter Kurs: ${lastDate}`;
+        toast('ECB nicht erreichbar — Fallback verfügbar.');
+      } else {
+        $('ecbStatus').textContent = 'ECB nicht erreichbar und kein Fallback vorhanden.';
+        toast('ECB nicht erreichbar.');
+      }
+    }
+  }
+
+  async function finalizeSnapshot(){
+    const trip = state.activeTrip;
+    const settleCcy = $('settleCcy').value;
+    const lastDate = await idbGet('meta','lastEcbDate');
+    if (!lastDate){ toast('Bitte zuerst ECB Kurs holen (oder später nochmal).'); return; }
+    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+    if (!daily){ toast('Kursdaten fehlen.'); return; }
+
+    // In MVP we store snapshot metadata only.
+    const snapshot = {
+      id: randomId('snap'),
+      tripId: trip.id,
+      t: Date.now(),
+      baseCurrency: trip.baseCurrency,
+      settleCurrency: settleCcy,
+      ecbDate: daily.date,
+      rates: daily.rates
+    };
+
+    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
+    $('ecbStatus').textContent = `Snapshot gespeichert · ${snapshot.ecbDate} · Ziel: ${snapshot.settleCurrency}`;
+    toast('Snapshot gespeichert.');
+  }
+
+  // ---------- Wiring ----------
+  async function init(){
+    // SW
+    if ('serviceWorker' in navigator){
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    }
+
+    await ensureProfile();
+    await ensureTrip();
+
+    // show app
+    $('app').hidden = false;
+    $('bottomBar').hidden = false;
+
+    // Buttons
+    $('btnProfile').addEventListener('click', openProfile);
+    $('btnSaveProfile').addEventListener('click', saveProfile);
+
+    $('btnAddExpense').addEventListener('click', addExpense);
+    $('btnQuickSettle').addEventListener('click', ()=>toast('Siehe Settlement‑Karte unten.'));
+
+    $('btnInvite').addEventListener('click', async ()=>{ await openInvite(); });
+    $('btnJoin').addEventListener('click', openJoin);
+    $('btnDoJoin').addEventListener('click', doJoin);
+
+    $('btnCopyInvite').addEventListener('click', copyInvite);
+    $('btnRefreshInvite').addEventListener('click', refreshInvite);
+
+    $('btnTrips').addEventListener('click', openTrips);
+    $('btnNewTrip').addEventListener('click', newTrip);
+
+    $('btnSettle').addEventListener('click', openSettle);
+    $('btnFetchEcb').addEventListener('click', fetchEcb);
+    $('btnFinalize').addEventListener('click', finalizeSnapshot);
+
+    // Online/offline indicator
+    const setOnline = () => {
+      $('syncDot').style.background = 'var(--cyan)';
+      $('syncLabel').textContent = state.gun ? 'Sync aktiv (Relay)' : 'Online (ohne Relay)';
+    };
+    const setOffline = () => {
+      $('syncDot').style.background = 'rgba(255,255,255,.25)';
+      $('syncLabel').textContent = 'Offline';
+    };
+    window.addEventListener('online', setOnline);
+    window.addEventListener('offline', setOffline);
+    navigator.onLine ? setOnline() : setOffline();
+
+    // close dialogs on backdrop click
+    document.querySelectorAll('dialog').forEach(d=>{
+      d.addEventListener('click', (e)=>{
+        const r = d.getBoundingClientRect();
+        const inDialog = (r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right);
+        if (!inDialog) d.close();
+      });
+    });
+
+    render();
+  }
+
+  init();
+</script>
+</body>
+</html>
