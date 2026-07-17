@@ -338,12 +338,12 @@
   <div class="bar">
     <div class="brand" aria-label="CashBash">
       <b>CashBash</b>
-      <span>local‑first · e2e</span>
     </div>
     <div class="status" aria-live="polite">
       <div class="dot" id="syncDot"></div>
       <small id="syncLabel">Wird initialisiert…</small>
     </div>
+    <button class="btn ghost" id="btnTripsHeader">Reisen</button>
     <button class="btn ghost" id="btnProfile">Profil</button>
   </div>
 </header>
@@ -354,28 +354,10 @@
       <div>
         <div class="eyebrow">Aktive Reise</div>
         <h1 id="tripTitle">—</h1>
-        <div class="sub" id="tripMeta">—</div>
-      </div>
-      <div style="text-align:right">
-        <div class="eyebrow">Du bist</div>
-        <div style="font-size:18px;font-weight:800" id="userName">—</div>
-        <div class="small" style="margin-top:6px">Device‑ID <span class="kbd" id="deviceId">—</span></div>
       </div>
     </div>
 
-    <div class="grid2">
-      <div class="pill"><b>Total</b><span class="money" id="totalSpent">—</span></div>
-      <div class="pill"><b>Wenn wir jetzt ausgleichen</b><span class="money" id="netNow">—</span></div>
-      <div class="pill"><b>Top‑Zahler:in</b><span class="money" id="topPayer">—</span></div>
-      <div class="pill"><b>Ausgaben</b><span class="money" id="expenseCount">—</span></div>
-    </div>
 
-    <div class="ledger-ribbon" aria-label="Ledger Ribbon">
-      <div class="row"><b>Ledger Ribbon</b><em id="ledgerHash">hash: —</em></div>
-      <div class="small" style="margin-top:6px;position:relative">
-        Jede Änderung ist ein <b>Event</b> (Create / Edit‑Event / Voiding). Das macht Sync & Audit stabil.
-      </div>
-    </div>
   </section>
 
   <section class="card" style="margin-top:14px" data-screen="expenses">
@@ -401,16 +383,9 @@
         <label for="payer">Gezahlt von</label>
         <select id="payer"></select>
       </div>
-      <div>
-        <label>Split</label>
-        <div class="pill" style="margin-top:6px">
-          <b>Gleichmäßig</b>
-          <span class="small muted">MVP</span>
-        </div>
-      </div>
     </div>
 
-    <label>Teilnehmer:innen</label>
+    <label>Bezahlt für</label>
     <div class="tabs" id="participants"></div>
 
   </section>
@@ -436,42 +411,16 @@
     </div>
   </section>
 
-  <section class="card" style="margin-top:14px;background: rgba(18,255,241,.055); border-color: rgba(18,255,241,.22)" data-screen="expenses">
-    <div class="eyebrow">Wenn wir jetzt ausgleichen…</div>
-    <h1 style="margin-top:4px">Wer schuldet wem was</h1>
-    <div class="sub">Deterministisch berechnet aus dem Event‑Log.</div>
-
-    <div id="settlement" class="small" style="margin-top:10px">—</div>
-
-    <div style="margin-top:12px" class="small">
-      <b>Push:</b> iOS‑PWA Push ist eingeschränkt. Dieses MVP macht <b>Auto‑Sync beim Öffnen</b> und bei Aktivität.
-    </div>
-  </section>
-
-  <section class="card" style="margin-top:14px" data-screen="expenses">
-    <h2>Ranking (wer am meisten gezahlt hat)</h2>
-    <div id="ranking" class="small" style="margin-top:10px">—</div>
-  </section>
-
   <section class="card" style="margin-top:14px" data-screen="expenses">
     <h2>Reise</h2>
-    <div class="sub" style="margin-top:10px">Invite‑only via Code‑Invite (E2E). Relay puffert Ciphertext.</div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
       <button class="btn secondary" id="btnInvite">Code‑Invite</button>
       <button class="btn" id="btnJoin">Mit Code beitreten</button>
-      <button class="btn ghost" id="btnTrips">Reisen</button>
       <button class="btn danger" id="btnSettle">Abschluss (ECB)</button>
     </div>
 
     <div class="small" style="margin-top:10px;color:rgba(255,255,255,.62)">
       Abschluss: Abschlusswährung wählen → ECB‑Tageskurs abrufen → Kurs speichern → Snapshot erzeugen.
-    </div>
-
-    <div style="margin-top:12px">
-      <button class="btn danger" id="btnDeleteTripAll" hidden>Reise für alle löschen</button>
-      <div class="small" id="deleteTripHint" style="margin-top:8px;color:rgba(255,255,255,.62)" hidden>
-        Nur der Owner kann die Reise gruppenweit löschen.
-      </div>
     </div>
   </section>
 
@@ -480,12 +429,21 @@
     <h1 style="margin-top:4px">Ausgaben je Person</h1>
     <div class="sub">Option A: nur Basiswährungs‑Ausgaben werden berücksichtigt.</div>
 
+    <div class="grid2" style="margin-top:12px">
+      <div class="pill"><b>Total</b><span class="money" id="totalSpent">—</span></div>
+      <div class="pill"><b>Wenn wir jetzt ausgleichen</b><span class="money" id="netNow">—</span></div>
+      <div class="pill"><b>Top‑Zahler:in</b><span class="money" id="topPayer">—</span></div>
+      <div class="pill"><b>Ausgaben</b><span class="money" id="expenseCount">—</span></div>
+    </div>
+
     <div id="dashPeople" style="margin-top:12px">—</div>
 
     <div class="pill" style="margin-top:12px">
       <b>Total (Base)</b>
       <span class="money" id="dashTotal">—</span>
     </div>
+
+    <div class="small muted" style="margin-top:16px;opacity:.55" id="dashLedger">hash: —</div>
   </section>
 </main>
 
@@ -517,20 +475,19 @@
   <div class="modalHead">
     <div>
       <div class="eyebrow">Profil</div>
-      <div style="font-weight:800">Name (global)</div>
+      <div style="font-weight:800">Device‑ID</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <label for="profileName">Dein Name</label>
-    <input id="profileName" placeholder="z.B. Nils" />
+    <div class="eyebrow">Du bist</div>
+    <div style="font-size:18px;font-weight:900" id="profileUserName">—</div>
 
-    <div class="small" style="margin-top:10px">
-      Dieser Name wird bei allen Reisen angezeigt. Intern nutzt CashBash IDs, damit Namen nicht kollidieren.
-    </div>
+    <div class="small muted" style="margin-top:10px">Device‑ID</div>
+    <div style="margin-top:6px"><span class="kbd" id="profileDeviceId">—</span></div>
 
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn" id="btnSaveProfile">Speichern</button>
+      <button class="btn ghost" data-close>Schließen</button>
     </div>
   </div>
 </dialog>
@@ -1340,9 +1297,12 @@
     $('deviceId').textContent = state.user.deviceId;
 
     $('tripTitle').textContent = trip.title;
-    $('tripMeta').innerHTML = `Basiswährung <span class="badge">${escapeHtml(trip.baseCurrency)}</span> · Schnellauswahl: ${escapeHtml(trip.quickCurrencies.join(', '))} · Abschlusswährung wählbar`;
     const activeInline = $('activeTripInline');
     if (activeInline) activeInline.textContent = trip.title;
+
+    // Dashboard bottom: ledger hash (unscheinbar)
+    const ledgerSmall = $('dashLedger');
+    if (ledgerSmall) ledgerSmall.textContent = ledgerFingerprint(events);
 
     fillCcySelects(trip);
     fillPeople(trip);
@@ -1427,7 +1387,7 @@
       const participants = (ev.data.participantMemberIds||[]).map(id=>memberName(trip,id)).join(', ');
       tr.innerHTML = `
         <td class="small">${escapeHtml(dt.toLocaleString())}</td>
-        <td><b>${escapeHtml(ev.data.what||'(ohne Titel)')}</b><div class="small muted">Teilnehmer:innen: ${escapeHtml(participants)}</div></td>
+        <td><b>${escapeHtml(ev.data.what||'(ohne Titel)')}</b><div class="small muted">Bezahlt für: ${escapeHtml(participants)}</div></td>
         <td>${escapeHtml(memberName(trip, ev.data.payerMemberId))}</td>
         <td class="money">${escapeHtml(fmtMoney(ev.data.amount, ev.data.ccy))}</td>
         <td style="text-align:right"><button class="btn danger small" data-void="${escapeHtml(ev.data.expenseId)}">Void</button></td>
@@ -1468,6 +1428,8 @@
   const mTrips = wireModal('modalTrips');
   const mSettle = wireModal('modalSettle');
   const mOnboarding = wireModal('modalOnboarding');
+  const mCurrency = wireModal('modalCurrencyPicker');
+  const mCurrency = wireModal('modalCurrencyPicker');
 
   // ---------- Actions ----------
   async function addExpense(){
@@ -1508,22 +1470,11 @@
   }
 
   async function openProfile(){
-    $('profileName').value = state.user.name || '';
+    const u = $('profileUserName');
+    const d = $('profileDeviceId');
+    if (u) u.textContent = state.user.name || '—';
+    if (d) d.textContent = state.user.deviceId || '—';
     mProfile.showModal();
-  }
-
-  async function saveProfile(){
-    const name = ($('profileName').value||'').trim();
-    if (!name){ toast('Name darf nicht leer sein.'); return; }
-    state.user.name = name;
-    await idbSet('meta','userName', name);
-    mProfile.close();
-    toast('Profil gespeichert.');
-    // Ensure membership name is updated in current trip (append-only would use a Rename event; MVP updates object)
-    if (state.activeTrip){
-      // no-op in MVP
-    }
-    render();
   }
 
   async function openInvite(){
@@ -1605,6 +1556,7 @@
       mJoin.close();
       toast('Reise beigetreten.');
       await startTripSync(trip);
+      setTab('expenses');
       render();
 
     } catch (e){
@@ -1619,13 +1571,17 @@
       $('tripList').innerHTML = keys.map(k=>{
         const t = state.trips.get(k);
         const active = (k === state.activeTripId);
+        const canDelete = (t.ownerDeviceId && t.ownerDeviceId === state.user.deviceId);
         return `
-          <div class="pill" style="margin:10px 0">
-            <div>
-              <b>${escapeHtml(t.title)}</b>
+          <div class="pill" style="margin:10px 0;align-items:flex-start">
+            <div style="min-width:0">
+              <b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(t.title)}</b>
               <div class="small muted">Basis: ${escapeHtml(t.baseCurrency)} · Mitglieder: ${t.members.length}</div>
             </div>
-            <button class="btn ${active?'secondary':'ghost'} small" data-trip="${escapeHtml(t.id)}">${active?'Aktiv':'Aktivieren'}</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="btn ${active?'secondary':'ghost'} small" data-trip="${escapeHtml(t.id)}">${active?'Aktiv':'Aktivieren'}</button>
+              ${canDelete ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : ''}
+            </div>
           </div>
         `;
       }).join('');
@@ -1640,6 +1596,36 @@
         toast('Aktive Reise gewechselt.');
         mTrips.close();
         await startTripSync(state.activeTrip);
+        render();
+      });
+    });
+
+    $('tripList').querySelectorAll('button[data-del]').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        const id = b.getAttribute('data-del');
+        const t = state.trips.get(id);
+        if (!t) return;
+        if (!t.ownerDeviceId || t.ownerDeviceId !== state.user.deviceId){
+          toast('Nur der Owner kann löschen.');
+          return;
+        }
+        const ok = confirm('Reise für alle löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');
+        if (!ok) return;
+
+        // If currently active, ensure we have the right key loaded
+        if (!state.tripKey || state.activeTrip?.id !== t.id){
+          // derive key for that trip
+          const pass = await idbGet('meta', `tripPass:${t.id}`);
+          if (!pass){ toast('Kein Schlüssel für diese Reise vorhanden.'); return; }
+          const salt = unb64(t.keySaltB64);
+          state.tripKey = await pbkdf2Key(pass, salt);
+        }
+
+        await publishTripDelete(t);
+        await hardDeleteTripLocal(t.id);
+        toast('Reise gelöscht.');
+        mTrips.close();
+        mOnboarding.showModal();
         render();
       });
     });
@@ -1778,36 +1764,13 @@
     toast('Snapshot gespeichert.');
   }
 
-  async function finalizeSnapshot(){
-    const trip = state.activeTrip;
-    const settleCcy = $('settleCcy').value;
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){ toast('Bitte zuerst ECB Kurs holen (oder später nochmal).'); return; }
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (!daily){ toast('Kursdaten fehlen.'); return; }
-
-    // In MVP we store snapshot metadata only.
-    const snapshot = {
-      id: randomId('snap'),
-      tripId: trip.id,
-      t: Date.now(),
-      baseCurrency: trip.baseCurrency,
-      settleCurrency: settleCcy,
-      ecbDate: daily.date,
-      rates: daily.rates
-    };
-
-    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
-    $('ecbStatus').textContent = `Snapshot gespeichert · ${snapshot.ecbDate} · Ziel: ${snapshot.settleCurrency}`;
-    toast('Snapshot gespeichert.');
-  }
 
   // ---------- Wiring ----------
   async function init(){
     // SW
     if ('serviceWorker' in navigator){
       // Bump the query string on every release to help iOS/Safari notice updates.
-      const swUrl = './sw.js?v=3';
+      const swUrl = './sw.js?v=5';
       navigator.serviceWorker.register(swUrl).then((reg) => {
         // Aggressiver Update-Check bei jedem Start
         try { reg.update(); } catch {}
@@ -1861,7 +1824,6 @@
 
     // Buttons
     $('btnProfile').addEventListener('click', openProfile);
-    $('btnSaveProfile').addEventListener('click', saveProfile);
 
     // Actions
     const addBtn = $('btnAddExpense');
@@ -1886,27 +1848,14 @@
     $('btnCopyInvite').addEventListener('click', copyInvite);
     $('btnRefreshInvite').addEventListener('click', refreshInvite);
 
-    $('btnTrips').addEventListener('click', openTrips);
+    // Reisen (im Header)
+    $('btnTripsHeader').addEventListener('click', openTrips);
     $('btnNewTrip').addEventListener('click', newTrip);
 
     $('btnSettle').addEventListener('click', openSettle);
     $('btnFetchEcb').addEventListener('click', fetchEcb);
     $('btnSaveManualFx').addEventListener('click', saveManualFx);
     $('btnFinalize').addEventListener('click', finalizeSnapshot);
-
-    // Delete trip (owner only)
-    const del = $('btnDeleteTripAll');
-    if (del) del.addEventListener('click', async ()=>{
-      const trip = state.activeTrip;
-      if (!trip) return;
-      if (!isTripOwner(trip)) { toast('Nur der Owner kann löschen.'); return; }
-      const ok = confirm('Reise für alle löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');
-      if (!ok) return;
-      await publishTripDelete(trip);
-      await hardDeleteTripLocal(trip.id);
-      toast('Reise gelöscht.');
-      mOnboarding.showModal();
-    });
 
     // If no active trip, show onboarding
     if (!state.activeTripId) {
