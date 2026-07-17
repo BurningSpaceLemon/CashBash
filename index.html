@@ -583,6 +583,16 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<div class="toast" id="updateToast" role="status" aria-live="polite" style="border-color: rgba(18,150,255,.35); display:none">
+  <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+    <div>
+      <b>Update verfügbar</b>
+      <div class="small" style="margin-top:4px">Tippe auf „Neu laden“, um die neue Version zu aktivieren.</div>
+    </div>
+    <button class="btn secondary" id="btnReloadUpdate">Neu laden</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/gun@0.2020.1241/gun.js"></script>
 <script>
   // CashBash MVP (GitHub Pages):
@@ -600,6 +610,22 @@
     t.classList.add('show');
     clearTimeout(toast._t);
     toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+  }
+
+  // Update UI
+  function showUpdateBanner(waitingWorker){
+    const u = $('updateToast');
+    if (!u) return;
+    u.style.display = 'block';
+    u.classList.add('show');
+    $('btnReloadUpdate').onclick = () => {
+      try {
+        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+      } catch {}
+      // controllerchange handler will reload.
+      // Fallback if controllerchange doesn't fire (some iOS edge cases):
+      setTimeout(() => window.location.reload(), 1200);
+    };
   }
 
   function escapeHtml(s){
@@ -1455,7 +1481,40 @@
   async function init(){
     // SW
     if ('serviceWorker' in navigator){
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+      // Bump the query string on every release to help iOS/Safari notice updates.
+      const swUrl = './sw.js?v=2';
+      navigator.serviceWorker.register(swUrl).then((reg) => {
+        // If there's already a waiting SW, show update UI immediately.
+        if (reg.waiting) showUpdateBanner(reg.waiting);
+
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            // When the new SW is installed and we already have a controller,
+            // it means an update is available.
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateBanner(newWorker);
+            }
+          });
+        });
+      }).catch(()=>{});
+
+      // When the new SW takes control, reload once.
+      let reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloading) return;
+        reloading = true;
+        window.location.reload();
+      });
+
+      // Optional: receive SW status messages
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        const msg = event.data;
+        if (msg && msg.type === 'SW_ACTIVATED') {
+          // Could update UI if desired
+        }
+      });
     }
 
     await ensureProfile();
@@ -1515,4 +1574,3 @@
 </script>
 </body>
 </html>
-
