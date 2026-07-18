@@ -1769,13 +1769,17 @@
 
   // ---------- Wiring ----------
   async function init(){
+    // Make the app visible as early as possible; we can show onboarding/errors inside.
+    try { $('app').hidden = false; } catch {}
+    try { $('bottomBar').hidden = false; } catch {}
+
     // Fail-safe: if init crashes, still show something (otherwise only header is visible)
     try {
 
     // SW
     if ('serviceWorker' in navigator){
       // Bump the query string on every release to help iOS/Safari notice updates.
-      const swUrl = './sw.js?v=7';
+      const swUrl = './sw.js?v=8';
       navigator.serviceWorker.register(swUrl).then((reg) => {
         // Aggressiver Update-Check bei jedem Start
         try { reg.update(); } catch {}
@@ -1838,12 +1842,14 @@
     if (addBtn) addBtn.addEventListener('click', addExpense);
 
     // Onboarding
-    $('btnOnboardCreate').addEventListener('click', async ()=>{
+    const btnOnboardCreate = $('btnOnboardCreate');
+    const btnOnboardJoin = $('btnOnboardJoin');
+    if (btnOnboardCreate) btnOnboardCreate.addEventListener('click', async ()=>{
       mOnboarding.close();
       await newTrip();
       setTab('expenses');
     });
-    $('btnOnboardJoin').addEventListener('click', ()=>{
+    if (btnOnboardJoin) btnOnboardJoin.addEventListener('click', ()=>{
       mOnboarding.close();
       openJoin();
     });
