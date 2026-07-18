@@ -317,6 +317,13 @@
       border:0;
     }
 
+    /* Settled state */
+    .disabled{
+      opacity: .55;
+      filter: grayscale(.2);
+      pointer-events:none;
+    }
+
     /* Ensure app is visible even if JS fails */
     #app[hidden]{ display:block; }
   </style>
@@ -346,12 +353,10 @@
   <section class="screen" id="screenExpenses" data-active="1">
 
     <section class="card" id="activeTripCard">
-      <div class="eyebrow">Aktive Reise</div>
       <h1 id="tripTitle">—</h1>
-      <div class="sub" id="tripMeta">—</div>
     </section>
 
-    <section class="card" style="margin-top:14px">
+    <section class="card" style="margin-top:14px" id="addExpenseCard">
       <div class="eyebrow">Ausgabe erfassen</div>
       <div class="row2" style="margin-top:10px">
         <div>
@@ -380,6 +385,7 @@
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
         <button class="btn secondary" id="btnAddExpense">Ausgabe hinzufügen</button>
+        <span class="small muted" id="settledHint" style="display:none">Reise ist abgeschlossen — neue Ausgaben sind gesperrt.</span>
       </div>
     </section>
 
@@ -407,40 +413,21 @@
       </div>
     </section>
 
-    <section class="card" id="actionsCard" style="margin-top:14px">
-      <div class="eyebrow">Reise‑Aktionen</div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
-        <button class="btn secondary" id="btnInvite">Invite erstellen</button>
-        <button class="btn" id="btnJoin">Beitreten (Code)</button>
-      </div>
-    </section>
 
   </section>
 
   <!-- Dashboard Screen -->
   <section class="screen" id="screenDashboard" data-active="0">
     <section class="card">
-      <div class="eyebrow">Dashboard</div>
-      <h1>Wer hat wie viel getragen?</h1>
-      <div class="sub">
-        Option A: Es zählen nur Ausgaben in Basiswährung (<span class="kbd" id="dashBase">—</span>). FX‑Ausgaben werden angezeigt, aber nicht in die Beträge gerechnet.
-      </div>
 
-      <div class="pill" style="margin-top:14px">
-        <div>
-          <div class="eyebrow">Abschluss (ECB)</div>
-          <div class="small">Tageskurs laden und Snapshot speichern</div>
+      <!-- Ranking first -->
+      <div class="list">
+        <div class="head">
+          <b>Ranking (Zahlungen)</b>
+          <span class="small" id="dashNote">—</span>
         </div>
-        <button class="btn" id="btnSettle">Öffnen</button>
-      </div>
-
-      <div class="pill" style="margin-top:14px">
-        <div>
-          <div class="eyebrow">Reise‑Aktionen</div>
-          <div class="small">Invite/Join sind im Ausgaben‑Tab ganz unten.</div>
-        </div>
-        <button class="btn ghost" id="btnGoActions">Zum Ende</button>
+        <div style="padding: 12px 14px" id="ranking">—</div>
       </div>
 
       <div class="grid2" style="margin-top:14px">
@@ -454,20 +441,20 @@
         </div>
       </div>
 
-      <div class="list" style="margin-top:14px">
-        <div class="head">
-          <b>Wenn wir jetzt ausgleichen…</b>
-          <span class="small">Base‑Währung · <span class="kbd" id="transferCount">0</span> Transfers</span>
+      <!-- Final settlement card -->
+      <div class="list" style="margin-top:14px; border-color: rgba(255,202,92,.22)">
+        <div class="head" style="background: rgba(255,202,92,.07); border-bottom-color: rgba(255,202,92,.14)">
+          <b>Final: Wenn wir jetzt ausgleichen…</b>
+          <span class="small">Basis <span class="kbd" id="dashBase">—</span> · <span class="kbd" id="transferCount">0</span> Transfers</span>
         </div>
         <div style="padding: 12px 14px" id="settlement">—</div>
+        <div style="padding: 0 14px 14px">
+          <div class="small muted" id="settledMeta">Noch nicht abgeschlossen.</div>
+        </div>
       </div>
 
-      <div class="list" style="margin-top:14px">
-        <div class="head">
-          <b>Ranking (Zahlungen)</b>
-          <span class="small" id="dashNote">—</span>
-        </div>
-        <div style="padding: 12px 14px" id="ranking">—</div>
+      <div style="margin-top:14px; display:flex; justify-content:flex-end">
+        <button class="btn secondary" id="btnSettle" style="min-width: 220px">Abschluss durchführen</button>
       </div>
 
     </section>
@@ -852,20 +839,42 @@
   // ExpenseCreated { expenseId, amount, ccy, what, payerMemberId, participantMemberIds }
   // ExpenseVoided  { targetExpenseId }
   // TripDeleted    { tripId }
+  // TripSettled    { snapshotId, settleCurrency, fxDate, fxSource }
 
   function applyEvents(events){
     const created = new Map();
     const voided = new Set();
+
+    // settlement checkpoint (optional)
+    let settled = null;
+
     for (const e of events){
       if (e.type === 'ExpenseCreated') created.set(e.data.expenseId, e);
       if (e.type === 'ExpenseVoided') voided.add(e.data.targetExpenseId);
+
+      if (e.type === 'TripSettled'){
+        // last one wins
+        settled = e;
+      }
     }
+
     const expenses = [];
     for (const [expenseId, ev] of created.entries()){
-      if (!voided.has(expenseId)) expenses.push(ev);
+      if (voided.has(expenseId)) continue;
+      if (settled && ev.t > settled.t) continue; // freeze at settlement time
+      expenses.push(ev);
     }
+
     expenses.sort((a,b)=>a.t-b.t);
     return expenses;
+  }
+  
+  function getSettlementEvent(events){
+    let settled = null;
+    for (const e of events){
+      if (e.type === 'TripSettled') settled = e;
+    }
+    return settled;
   }
 
   function computeBalancesBase(expensesBaseOnly, trip){
@@ -1130,6 +1139,104 @@
     }
   }
 
+  function fxConvertViaEur(amount, from, to, rates){
+    if (from === to) return amount;
+    if (!rates || !rates[from] || !rates[to]) throw new Error('Missing rate');
+    const eur = from === 'EUR' ? amount : (amount / rates[from]);
+    const out = to === 'EUR' ? eur : (eur * rates[to]);
+    return out;
+  }
+
+  function round2(n){
+    return Math.round((Number(n) || 0) * 100) / 100;
+  }
+
+  async function settleTripFinal(){
+    const trip = state.activeTrip;
+    if (!trip){ toast('Keine aktive Reise.'); return; }
+
+    // 1) Ensure we have fresh-ish rates (ECB or fallback)
+    await fetchEcb();
+
+    const settleCcy = trip.baseCurrency; // chosen: convert everything to base
+    const lastDate = await idbGet('meta','lastEcbDate');
+    if (!lastDate){ toast('Kein Kurs verfügbar.'); return; }
+
+    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+    if (!daily || !daily.rates){ toast('Kursdaten fehlen.'); return; }
+
+    // 2) Load events (unfrozen) for calculation
+    const allEvents = await loadTripEvents(trip.id);
+    const alreadySettled = getSettlementEvent(allEvents);
+    if (alreadySettled){
+      toast('Diese Reise wurde bereits abgeschlossen.');
+      return;
+    }
+
+    const expenses = applyEvents(allEvents);
+
+    // 3) Convert every expense to base using ECB rates
+    const baseExpenses = [];
+    for (const ev of expenses){
+      const d = ev.data;
+      const amt = Number(d.amount) || 0;
+      const from = d.ccy;
+      const to = settleCcy;
+
+      let converted;
+      try {
+        // ECB rates are quoted as 1 EUR = X CUR
+        // Convert: from -> EUR -> to
+        converted = fxConvertViaEur(amt, from, to, daily.rates);
+      } catch {
+        // Missing rate => require manual
+        $('manualFx').hidden = false;
+        $('manualFxCcy').value = from;
+        toast(`Kurs fehlt für ${from}. Bitte manuell speichern und erneut abschließen.`);
+        return;
+      }
+
+      baseExpenses.push({
+        ...ev,
+        data: { ...d, amount: round2(converted), ccy: settleCcy }
+      });
+    }
+
+    // 4) Save snapshot
+    const snapshot = {
+      id: randomId('snap'),
+      tripId: trip.id,
+      t: Date.now(),
+      baseCurrency: trip.baseCurrency,
+      settleCurrency: settleCcy,
+      fxDate: daily.date,
+      fxSource: daily.source,
+      rates: daily.rates
+    };
+    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
+
+    // 5) Write TripSettled checkpoint event (freeze)
+    const settleEv = {
+      id: randomId('evt'),
+      type: 'TripSettled',
+      t: Date.now(),
+      ref: snapshot.id,
+      data: {
+        snapshotId: snapshot.id,
+        settleCurrency: settleCcy,
+        fxDate: daily.date,
+        fxSource: daily.source
+      }
+    };
+
+    await upsertEvent(trip.id, settleEv, {fromSync:false});
+
+    toast('Abschluss gespeichert.');
+    try { mSettle.close(); } catch {}
+    renderAll();
+  }
+
+  // Keep existing manual flow (modal button) as a lightweight "save snapshot" action
   async function finalizeSnapshot(){
     const trip = state.activeTrip;
     if (!trip) return;
@@ -1271,6 +1378,8 @@
 
     // ensure member exists
     if (state.activeTrip){
+      // NOTE: if trip was settled, we keep it readable but new expenses are discouraged.
+      // (UI disable comes next iteration.)
       const hasMe = state.activeTrip.members.some(m=>m.name === state.user.name);
       if (!hasMe){
         state.activeTrip.members.push({ id: randomId('m'), name: state.user.name });
@@ -1330,7 +1439,6 @@
     const trip = state.activeTrip;
     if (!trip){
       $('tripTitle').textContent = '—';
-      $('tripMeta').textContent = '—';
       $('expenseCount').textContent = '0';
       $('netNow').textContent = '—';
       $('transferCount').textContent = '—';
@@ -1340,15 +1448,29 @@
     }
 
     $('tripTitle').textContent = trip.title;
-    $('tripMeta').innerHTML = `Basiswährung <span class="kbd">${escapeHtml(trip.baseCurrency)}</span> · Owner <span class="kbd">${escapeHtml(trip.ownerDeviceId || '—')}</span>`;
 
     fillCcySelects(trip);
     fillPeople(trip);
 
     const events = await loadTripEvents(trip.id);
+    const settled = getSettlementEvent(events);
     const expenses = applyEvents(events);
 
     $('expenseCount').textContent = String(expenses.length);
+
+    // Disable adding new expenses after settlement
+    const addBtn = $('btnAddExpense');
+    const addCard = $('addExpenseCard');
+    const hint = $('settledHint');
+    if (settled){
+      if (addBtn) addBtn.disabled = true;
+      if (addCard) addCard.classList.add('disabled');
+      if (hint) hint.style.display = 'inline';
+    } else {
+      if (addBtn) addBtn.disabled = false;
+      if (addCard) addCard.classList.remove('disabled');
+      if (hint) hint.style.display = 'none';
+    }
 
     // Table
     const tbody = $('expenses');
@@ -1430,9 +1552,22 @@
     $('dashBase').textContent = trip.baseCurrency;
 
     const events = await loadTripEvents(trip.id);
+    const settled = getSettlementEvent(events);
     const expenses = applyEvents(events);
 
-    // Option A
+    // If settled, show metadata
+    const meta = $('settledMeta');
+    if (meta){
+      if (settled){
+        const d = settled.data || {};
+        const when = new Date(settled.t).toLocaleString();
+        meta.textContent = `Abgeschlossen · ${when} · FX ${d.fxDate || '—'} · Quelle: ${d.fxSource || '—'}`;
+      } else {
+        meta.textContent = 'Noch nicht abgeschlossen.';
+      }
+    }
+
+    // Totals + ranking (still base-only for now; FX-aware totals can come next)
     let totalBase = 0;
     let nonBase = 0;
     const paid = new Map(trip.members.map(m=>[m.id,0]));
@@ -1448,9 +1583,9 @@
     totalBase = Math.round(totalBase*100)/100;
 
     $('dashTotal').textContent = fmtMoney(totalBase, trip.baseCurrency);
-    $('dashNote').textContent = nonBase ? `+ ${nonBase} FX ignoriert` : 'nur Base‑Währung';
+    $('dashNote').textContent = nonBase ? `+ ${nonBase} FX (wird beim Abschluss umgerechnet)` : 'nur Base‑Währung';
 
-    // Settlement preview (Base only) moved to Dashboard
+    // Settlement preview (Base only until settlement event exists)
     const baseOnly = expenses.filter(e => e.data.ccy === trip.baseCurrency);
     const bal = computeBalancesBase(baseOnly, trip);
 
@@ -1460,6 +1595,9 @@
 
     const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
     $('transferCount').textContent = String(transfers.length);
+
+    // NOTE: Abschluss/FX-Update comes next iteration.
+    // For now the "Abschluss durchführen" button simply opens the existing ECB modal.
 
     if (!transfers.length){
       $('settlement').innerHTML = '<span class="muted">Keine Transfers nötig (für Base‑Währung).</span>';
@@ -1807,11 +1945,6 @@
     $('btnInvite').addEventListener('click', openInvite);
     $('btnJoin').addEventListener('click', openJoin);
 
-    const go = $('btnGoActions');
-    if (go) go.addEventListener('click', ()=>{
-      setTab('expenses');
-      setTimeout(()=>{ try { $('actionsCard').scrollIntoView({behavior:'smooth', block:'start'}); } catch {} }, 40);
-    });
     $('btnDoJoin').addEventListener('click', doJoin);
 
     $('btnCopyInvite').addEventListener('click', copyInvite);
@@ -1822,6 +1955,9 @@
     $('btnFetchEcb').addEventListener('click', fetchEcb);
     $('btnFinalize').addEventListener('click', finalizeSnapshot);
     $('btnSaveManualFx').addEventListener('click', saveManualFx);
+
+    const settleBtn = $('btnSettle');
+    if (settleBtn) settleBtn.addEventListener('click', settleTripFinal);
 
     $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
