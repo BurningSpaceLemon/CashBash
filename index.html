@@ -2040,7 +2040,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=4';
+    const swUrl = './sw.js?v=4.1';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2092,10 +2092,29 @@
 
     $('btnFetchEcb').addEventListener('click', fetchEcb);
     $('btnFinalize').addEventListener('click', finalizeSnapshot);
-    $('btnSaveManualFx').addEventListener('click', saveManualFx);
+
+    // Manual FX save button lives inside the settle modal
+    const manualBtn = $('btnSaveManualFx');
+    if (manualBtn) manualBtn.addEventListener('click', async ()=>{
+      try {
+        toast('Speichere Kurs…');
+        await saveManualFx();
+      } catch (e){
+        toast('Kurs speichern fehlgeschlagen.');
+        console.error(e);
+      }
+    });
 
     const settleBtn = $('btnSettle');
-    if (settleBtn) settleBtn.addEventListener('click', settleTripFinal);
+    if (settleBtn) settleBtn.addEventListener('click', async ()=>{
+      try {
+        toast('Abschluss…');
+        await settleTripFinal();
+      } catch (e){
+        toast('Abschluss fehlgeschlagen.');
+        console.error(e);
+      }
+    });
 
     $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
