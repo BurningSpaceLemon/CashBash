@@ -1103,14 +1103,27 @@
     if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
     if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
 
+    // Manual always means: 1 EUR = rate CCY (ECB style)
     const date = new Date().toISOString().slice(0,10);
-    const daily = { date, source: 'manual', rates: { EUR: 1, [ccy]: rate } };
+
+    // Merge into existing daily if present (so we can store multiple manual currencies for the same day)
+    const existing = await idbGet('fx', `ecbDaily:${date}`);
+    const mergedRates = {
+      ...(existing?.rates || {}),
+      EUR: 1,
+      [ccy]: rate
+    };
+
+    const daily = { date, source: 'manual', rates: mergedRates };
     await idbSet('fx', `ecbDaily:${daily.date}`, daily);
     await idbSet('meta','lastEcbDate', daily.date);
 
     $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
     $('manualFx').hidden = true;
+
+    // If user opened modal due to missing FX for an expense/settlement, re-render so buttons become usable.
     toast('Manueller Kurs gespeichert.');
+    renderAll();
   }
 
   async function fetchEcb(){
@@ -1155,17 +1168,7 @@
     const trip = state.activeTrip;
     if (!trip){ toast('Keine aktive Reise.'); return; }
 
-    // 1) Ensure we have fresh-ish rates (ECB or fallback)
-    await fetchEcb();
-
-    const settleCcy = trip.baseCurrency; // chosen: convert everything to base
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){ toast('Kein Kurs verfügbar.'); return; }
-
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (!daily || !daily.rates){ toast('Kursdaten fehlen.'); return; }
-
-    // 2) Load events (unfrozen) for calculation
+    // 1) Load events first (so we can detect "already settled" and also compute "everything already balanced")
     const allEvents = await loadTripEvents(trip.id);
     const alreadySettled = getSettlementEvent(allEvents);
     if (alreadySettled){
@@ -1189,7 +1192,57 @@
       return out;
     })();
 
-    // 3) Convert every expense to base using ECB rates
+    // 2) If all balances are already zero (base-only), allow closing the trip without FX.
+    // This covers the case "alle Summen ausgeglichen".
+    const baseOnlyForCheck = expensesRaw.filter(e => e.data.ccy === trip.baseCurrency);
+    const bal0 = computeBalancesBase(baseOnlyForCheck, trip);
+    const isAllZero = [...bal0.values()].every(v => Math.abs(v) < 0.005);
+
+    if (isAllZero){
+      const snapshot = {
+        id: randomId('snap'),
+        tripId: trip.id,
+        t: Date.now(),
+        baseCurrency: trip.baseCurrency,
+        settleCurrency: trip.baseCurrency,
+        fxDate: null,
+        fxSource: 'none',
+        rates: null
+      };
+      await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
+      await idbSet('fx', `settlement:${snapshot.id}`, { snapshotId: snapshot.id, tripId: trip.id, t: Date.now(), transfers: [] });
+
+      const settleEv = {
+        id: randomId('evt'),
+        type: 'TripSettled',
+        t: Date.now(),
+        ref: snapshot.id,
+        data: {
+          snapshotId: snapshot.id,
+          settleCurrency: trip.baseCurrency,
+          fxDate: null,
+          fxSource: 'none'
+        }
+      };
+
+      await upsertEvent(trip.id, settleEv, {fromSync:false});
+      toast('Alles passt — keine Transfers nötig. Reise abgeschlossen.');
+      try { mSettle.close(); } catch {}
+      renderAll();
+      return;
+    }
+
+    // 3) Ensure we have rates (ECB or fallback) for FX conversion.
+    await fetchEcb();
+
+    const settleCcy = trip.baseCurrency; // convert everything to base
+    const lastDate = await idbGet('meta','lastEcbDate');
+    if (!lastDate){ toast('Kein Kurs verfügbar.'); return; }
+
+    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+    if (!daily || !daily.rates){ toast('Kursdaten fehlen.'); return; }
+
+    // 4) Convert every expense to base using ECB rates
     const baseExpenses = [];
     for (const ev of expensesRaw){
       const d = ev.data;
@@ -1214,7 +1267,7 @@
       });
     }
 
-    // 4) Save snapshot
+    // 5) Save snapshot
     const snapshot = {
       id: randomId('snap'),
       tripId: trip.id,
@@ -1227,7 +1280,7 @@
     };
     await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
 
-    // 5) Write TripSettled checkpoint event (freeze)
+    // 6) Write TripSettled checkpoint event (freeze)
     const settleEv = {
       id: randomId('evt'),
       type: 'TripSettled',
@@ -1241,15 +1294,14 @@
       }
     };
 
-    // 6) Optional: also store a derived settlement preview for UI (so everyone sees same transfers)
-    // We compute using converted expenses.
+    // 7) Store derived deterministic transfers (so every device sees the same)
     const bal = computeBalancesBase(baseExpenses, trip);
     const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
     await idbSet('fx', `settlement:${snapshot.id}`, { snapshotId: snapshot.id, tripId: trip.id, t: Date.now(), transfers });
 
     await upsertEvent(trip.id, settleEv, {fromSync:false});
 
-    toast('Abschluss gespeichert.');
+    toast(transfers.length ? 'Reise abgeschlossen.' : 'Alles passt — keine Transfers nötig. Reise abgeschlossen.');
     try { mSettle.close(); } catch {}
     renderAll();
   }
@@ -1988,7 +2040,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=2';
+    const swUrl = './sw.js?v=4';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
