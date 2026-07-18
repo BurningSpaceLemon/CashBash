@@ -1775,7 +1775,7 @@
     // SW
     if ('serviceWorker' in navigator){
       // Bump the query string on every release to help iOS/Safari notice updates.
-      const swUrl = './sw.js?v=6';
+      const swUrl = './sw.js?v=7';
       navigator.serviceWorker.register(swUrl).then((reg) => {
         // Aggressiver Update-Check bei jedem Start
         try { reg.update(); } catch {}
