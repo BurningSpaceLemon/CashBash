@@ -1213,6 +1213,8 @@
   }
 
   function setTab(tab){
+    // Defensive: never allow UI tab switching to crash init/render
+    if (!state.ui) state.ui = { tab: 'expenses' };
     state.ui.tab = tab;
 
     const isDash = tab === 'dashboard';
@@ -1767,6 +1769,9 @@
 
   // ---------- Wiring ----------
   async function init(){
+    // Fail-safe: if init crashes, still show something (otherwise only header is visible)
+    try {
+
     // SW
     if ('serviceWorker' in navigator){
       // Bump the query string on every release to help iOS/Safari notice updates.
@@ -1819,11 +1824,14 @@
     setTab('expenses');
 
     // Tabs
-    $('tabExpenses').addEventListener('click', ()=>setTab('expenses'));
-    $('tabDashboard').addEventListener('click', ()=>setTab('dashboard'));
+    const tabE = $('tabExpenses');
+    const tabD = $('tabDashboard');
+    if (tabE) tabE.addEventListener('click', ()=>setTab('expenses'));
+    if (tabD) tabD.addEventListener('click', ()=>setTab('dashboard'));
 
     // Buttons
-    $('btnProfile').addEventListener('click', openProfile);
+    const btnProfile = $('btnProfile');
+    if (btnProfile) btnProfile.addEventListener('click', openProfile);
 
     // Actions
     const addBtn = $('btnAddExpense');
@@ -1841,21 +1849,32 @@
     });
 
     // Invite/Join/Trips
-    $('btnInvite').addEventListener('click', async ()=>{ await openInvite(); });
-    $('btnJoin').addEventListener('click', openJoin);
-    $('btnDoJoin').addEventListener('click', doJoin);
+    const btnInvite = $('btnInvite');
+    const btnJoin = $('btnJoin');
+    const btnDoJoin = $('btnDoJoin');
+    if (btnInvite) btnInvite.addEventListener('click', async ()=>{ await openInvite(); });
+    if (btnJoin) btnJoin.addEventListener('click', openJoin);
+    if (btnDoJoin) btnDoJoin.addEventListener('click', doJoin);
 
-    $('btnCopyInvite').addEventListener('click', copyInvite);
-    $('btnRefreshInvite').addEventListener('click', refreshInvite);
+    const btnCopyInvite = $('btnCopyInvite');
+    const btnRefreshInvite = $('btnRefreshInvite');
+    if (btnCopyInvite) btnCopyInvite.addEventListener('click', copyInvite);
+    if (btnRefreshInvite) btnRefreshInvite.addEventListener('click', refreshInvite);
 
     // Reisen (im Header)
-    $('btnTripsHeader').addEventListener('click', openTrips);
-    $('btnNewTrip').addEventListener('click', newTrip);
+    const btnTripsHeader = $('btnTripsHeader');
+    const btnNewTrip = $('btnNewTrip');
+    if (btnTripsHeader) btnTripsHeader.addEventListener('click', openTrips);
+    if (btnNewTrip) btnNewTrip.addEventListener('click', newTrip);
 
-    $('btnSettle').addEventListener('click', openSettle);
-    $('btnFetchEcb').addEventListener('click', fetchEcb);
-    $('btnSaveManualFx').addEventListener('click', saveManualFx);
-    $('btnFinalize').addEventListener('click', finalizeSnapshot);
+    const btnSettle = $('btnSettle');
+    const btnFetchEcb = $('btnFetchEcb');
+    const btnSaveManualFx = $('btnSaveManualFx');
+    const btnFinalize = $('btnFinalize');
+    if (btnSettle) btnSettle.addEventListener('click', openSettle);
+    if (btnFetchEcb) btnFetchEcb.addEventListener('click', fetchEcb);
+    if (btnSaveManualFx) btnSaveManualFx.addEventListener('click', saveManualFx);
+    if (btnFinalize) btnFinalize.addEventListener('click', finalizeSnapshot);
 
     // If no active trip, show onboarding
     if (!state.activeTripId) {
@@ -1885,6 +1904,14 @@
     });
 
     render();
+
+    } catch (e){
+      console.error('Init failed', e);
+      // Make sure the app container is visible so we don't end up with a blank screen.
+      try { $('app').hidden = false; } catch {}
+      try { $('bottomBar').hidden = false; } catch {}
+      try { toast('Fehler beim Start — bitte Konsole prüfen.'); } catch {}
+    }
   }
 
   init();
