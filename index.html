@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#000a1b" />
+  <meta name="theme-color" content="#060713" />
   <meta name="color-scheme" content="dark" />
 
   <title>CashBash</title>
@@ -14,249 +14,237 @@
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
-    :root {
-      --dark-blue:   #000a1b;
-      --bright-blue: #1296FF;
-      --cyan:        #12FFF1;
-      --pink:        #FF1296;
-      --white:       #FFFFFF;
+    :root{
+      --bg0:#060713;
+      --bg1:#0A0C1E;
+      --ink:#F3F5FF;
+      --mut:rgba(243,245,255,.72);
+      --mut2:rgba(243,245,255,.48);
+      --line:rgba(138,111,255,.22);
+      --card:rgba(138,111,255,.08);
+      --card2:rgba(64,224,208,.06);
 
-      --muted: rgba(255,255,255,.72);
-      --muted2: rgba(255,255,255,.45);
-      --line: rgba(18,150,255,.22);
-      --card: rgba(18,150,255,.06);
-      --card2: rgba(18,255,241,.06);
-      --shadow: 0 18px 60px rgba(0,0,0,.55);
-      --r: 14px;
-      --r2: 10px;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --vio:#8A6FFF;
+      --mint:#40E0D0;
+      --amber:#FFCA5C;
+      --rose:#FF3B7A;
+
+      --r:16px;
+      --r2:12px;
+      --shadow: 0 24px 90px rgba(0,0,0,.55);
 
       --safe-top: env(safe-area-inset-top);
       --safe-bottom: env(safe-area-inset-bottom);
       --safe-left: env(safe-area-inset-left);
       --safe-right: env(safe-area-inset-right);
+
+      --display: "Fraunces", ui-serif, Georgia, serif;
+      --body: "IBM Plex Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: var(--white);
-      background:
-        radial-gradient(1200px 800px at 10% 5%, rgba(18,255,241,.09), transparent 55%),
-        radial-gradient(900px 700px at 90% 10%, rgba(255,18,150,.06), transparent 55%),
-        radial-gradient(1100px 900px at 65% 85%, rgba(18,150,255,.12), transparent 60%),
-        linear-gradient(180deg, #000816, var(--dark-blue));
-      overflow-x: hidden;
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family:var(--body);
+      color:var(--ink);
+      background: var(--bg0);
+      overflow-x:hidden;
     }
 
-    a { color: inherit; }
+    a{ color:inherit; }
 
-    .app {
-      max-width: 980px;
-      margin: 0 auto;
-      padding-left: calc(16px + var(--safe-left));
-      padding-right: calc(16px + var(--safe-right));
-      padding-top: calc(12px + var(--safe-top));
-      padding-bottom: calc(90px + var(--safe-bottom));
+    header{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background: linear-gradient(180deg, rgba(6,7,19,.88), rgba(6,7,19,.55));
+      backdrop-filter: blur(12px);
+      border-bottom:1px solid rgba(138,111,255,.18);
     }
 
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      backdrop-filter: blur(10px);
-      background: linear-gradient(180deg, rgba(0,10,27,.92), rgba(0,10,27,.64));
-      border-bottom: 1px solid rgba(18,150,255,.18);
-    }
-    .bar {
-      max-width: 980px;
-      margin: 0 auto;
-      padding:
-        calc(12px + var(--safe-top))
-        calc(16px + var(--safe-right))
-        12px
-        calc(16px + var(--safe-left));
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .topbar{
+      max-width:980px;
+      margin:0 auto;
+      padding: calc(12px + var(--safe-top)) calc(16px + var(--safe-right)) 12px calc(16px + var(--safe-left));
+      display:flex;
+      align-items:center;
+      gap:12px;
     }
 
-    .brand { display:flex; align-items:baseline; gap:10px; }
-    .brand b { letter-spacing: .06em; font-weight: 800; }
-    .brand span { color: var(--muted2); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
-
-    .status {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border: 1px solid rgba(18,150,255,.22);
-      border-radius: 999px;
-      background: rgba(18,150,255,.06);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-      min-width: 0;
+    .brand{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      min-width: 140px;
     }
-    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--cyan); box-shadow: 0 0 0 4px rgba(18,255,241,.15); }
-    .status small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .brand b{
+      font-family:var(--display);
+      font-weight:700;
+      letter-spacing: .02em;
+      font-size:20px;
+    }
+    .brand span{
+      font-family:var(--mono);
+      font-size:11px;
+      letter-spacing:.14em;
+      color:var(--mut2);
+      text-transform:uppercase;
+    }
 
-    .btn {
-      appearance: none;
-      border: 1.5px solid var(--bright-blue);
-      color: var(--bright-blue);
+    .status{
+      flex:1;
+      min-width:0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:999px;
+      border:1px solid rgba(64,224,208,.22);
+      background: rgba(64,224,208,.06);
+    }
+    .dot{ width:10px; height:10px; border-radius:999px; background: rgba(243,245,255,.25); box-shadow:0 0 0 4px rgba(64,224,208,.10); }
+    .status small{ color:var(--mut); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .btn{
+      appearance:none;
+      border:1.5px solid rgba(138,111,255,.9);
       background: transparent;
+      color: rgba(243,245,255,.92);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 11px 13px;
       font-weight: 700;
-      cursor: pointer;
-      transition: transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
-      letter-spacing: .01em;
-      line-height: 1;
+      cursor:pointer;
+      letter-spacing:.01em;
+      line-height:1;
       touch-action: manipulation;
-      user-select: none;
       -webkit-tap-highlight-color: transparent;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
     }
-    .btn:hover { background: var(--bright-blue); color: var(--dark-blue); transform: translateY(-1px); }
-    .btn:active { transform: translateY(0); }
-    .btn.secondary { border-color: rgba(18,255,241,.9); color: var(--cyan); }
-    .btn.secondary:hover { background: var(--cyan); color: var(--dark-blue); }
-    .btn.danger { border-color: rgba(255,18,150,.95); color: var(--pink); }
-    .btn.danger:hover { background: var(--pink); color: var(--dark-blue); }
-    .btn.ghost { border-color: rgba(18,150,255,.25); color: rgba(255,255,255,.88); }
-    .btn.ghost:hover { background: rgba(18,150,255,.2); color: var(--white); }
+    .btn:hover{ transform: translateY(-1px); background: rgba(138,111,255,.12); }
+    .btn:active{ transform: translateY(0); }
 
-    .btn.small { padding: 9px 10px; border-radius: 10px; font-weight: 700; }
+    .btn.secondary{ border-color: rgba(64,224,208,.95); }
+    .btn.secondary:hover{ background: rgba(64,224,208,.12); }
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
+    .btn.ghost{ border-color: rgba(243,245,255,.18); color: rgba(243,245,255,.86); }
+    .btn.ghost:hover{ background: rgba(243,245,255,.06); }
+
+    .btn.danger{ border-color: rgba(255,59,122,.95); }
+    .btn.danger:hover{ background: rgba(255,59,122,.10); }
+
+    .btn.small{ padding: 9px 10px; border-radius: 11px; }
+
+    :focus-visible{ outline:none; box-shadow: 0 0 0 4px rgba(64,224,208,.14), 0 0 0 1px rgba(64,224,208,.55) inset; }
+
+    main{
+      max-width:980px;
+      margin:0 auto;
+      padding: 14px calc(16px + var(--safe-right)) calc(96px + var(--safe-bottom)) calc(16px + var(--safe-left));
+    }
+
+    .card{
       border-radius: var(--r);
-      padding: 16px;
+      border: 1px solid rgba(138,111,255,.20);
+      background: rgba(138,111,255,.06);
       box-shadow: var(--shadow);
-      position: relative;
-      overflow: hidden;
+      padding: 16px;
+      position:relative;
+      overflow:hidden;
     }
 
-    .eyebrow { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.70); }
-    h1 { margin: 0; font-size: 22px; line-height: 1.1; letter-spacing: -.02em; }
-    h2 { margin: 0; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.78); }
-    .sub { color: var(--muted); margin-top: 8px; line-height: 1.35; }
+    .eyebrow{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing:.16em;
+      text-transform: uppercase;
+      color: rgba(243,245,255,.66);
+    }
 
-    .pill {
-      border: 1px solid rgba(18,150,255,.24);
-      border-radius: 999px;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+    h1{ margin: 6px 0 0; font-family: var(--display); font-size: 24px; letter-spacing: .01em; }
+    h2{ margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing:.16em; text-transform:uppercase; color: rgba(243,245,255,.70); }
+
+    .sub{ color: var(--mut); margin-top: 10px; line-height: 1.35; }
+
+    .row2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    label{ display:block; font-size: 12px; color: rgba(243,245,255,.70); margin: 10px 0 6px; }
+    input, select{
+      width:100%;
+      background: rgba(6,7,19,.22);
+      color: var(--ink);
+      border: 1.5px solid rgba(138,111,255,.26);
+      border-radius: 12px;
+      padding: 12px 12px;
+      font-size: 16px;
+      outline:none;
+    }
+    input:focus, select:focus{ border-color: rgba(64,224,208,.65); }
+    input::placeholder{ color: rgba(243,245,255,.35); }
+
+    .pill{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap: 10px;
-      background: rgba(0,0,0,.10);
-    }
-    .pill b { font-size: 13px; }
-    .money { font-family: var(--mono); white-space: nowrap; }
-
-    .ledger-ribbon {
-      margin-top: 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(18,255,241,.25);
-      background: linear-gradient(90deg, rgba(18,255,241,.12), rgba(18,150,255,.10), rgba(255,18,150,.08));
-      padding: 12px 12px;
-      position: relative;
-      overflow: hidden;
-    }
-    .ledger-ribbon:before {
-      content: "";
-      position: absolute; inset: -2px;
-      background: repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0px, rgba(255,255,255,.08) 2px, transparent 2px, transparent 8px);
-      opacity: .22;
-      transform: skewX(-12deg) translateX(-10%);
-      pointer-events: none;
-    }
-    .ledger-ribbon .row { position: relative; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-    .ledger-ribbon .row b { font-size: 13px; letter-spacing: .02em; }
-    .ledger-ribbon .row em { font-style: normal; color: rgba(255,255,255,.82); font-family: var(--mono); font-size: 12px; }
-
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-
-    label { display: block; font-size: 12px; color: rgba(255,255,255,.70); margin: 10px 0 6px; }
-    input, select {
-      width: 100%;
-      background: transparent;
-      color: var(--white);
-      border: 1.5px solid rgba(18,150,255,.35);
-      border-radius: 12px;
-      padding: 12px 12px;
-      outline: none;
-      transition: border-color .15s ease;
-      font-size: 16px; /* avoid iOS zoom */
-    }
-    input:focus, select:focus { border-color: var(--bright-blue); }
-    input::placeholder { color: rgba(255,255,255,.35); }
-
-    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-    .tab {
-      padding: 10px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(18,150,255,.25);
-      background: rgba(18,150,255,.06);
-      cursor: pointer;
-      color: rgba(255,255,255,.90);
+      border: 1px solid rgba(243,245,255,.14);
+      background: rgba(243,245,255,.05);
+      padding: 10px 12px;
+    }
+
+    .kbd{ font-family: var(--mono); font-size: 12px; padding: 4px 7px; border-radius: 8px; border: 1px solid rgba(243,245,255,.18); background: rgba(0,0,0,.18); }
+
+    .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      border-radius: 999px;
+      border: 1px solid rgba(64,224,208,.18);
+      background: rgba(64,224,208,.06);
+      color: rgba(243,245,255,.90);
+      padding: 10px 12px;
       font-weight: 700;
-      font-size: 12px;
+      cursor:pointer;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+      font-size: 12px;
     }
-    .tab[data-active="1"] { border-color: rgba(18,255,241,.55); box-shadow: 0 0 0 4px rgba(18,255,241,.10) inset; color: var(--white); }
+    .chip[data-active="1"]{ border-color: rgba(64,224,208,.55); box-shadow: 0 0 0 4px rgba(64,224,208,.08) inset; }
+    .chip[data-active="0"]{ opacity:.55; }
 
-    .list {
+    .list{
       margin-top: 14px;
       border-radius: var(--r);
-      border: 1px solid rgba(18,150,255,.2);
-      overflow: hidden;
-      background: rgba(0,0,0,.12);
+      border:1px solid rgba(138,111,255,.18);
+      overflow:hidden;
+      background: rgba(0,0,0,.14);
     }
-    .list .head {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    .list .head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
       padding: 12px 14px;
-      border-bottom: 1px solid rgba(18,150,255,.18);
-      background: rgba(18,150,255,.05);
-    }
-    .list .head b { letter-spacing: .12em; text-transform: uppercase; font-size: 12px; color: rgba(255,255,255,.75); }
-
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 12px; border-bottom: 1px solid rgba(18,150,255,.14); text-align: left; vertical-align: top; }
-    th { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.65); font-weight: 800; }
-    td { font-size: 13px; }
-
-    .small { font-size: 12px; color: rgba(255,255,255,.72); }
-    .muted { color: rgba(255,255,255,.70); }
-
-    .badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(18,255,241,.28);
-      color: rgba(255,255,255,.9);
-      background: rgba(18,255,241,.07);
-      font-family: var(--mono);
-      font-size: 12px;
+      border-bottom: 1px solid rgba(138,111,255,.14);
+      background: rgba(138,111,255,.06);
     }
 
-    .kbd {
-      font-family: var(--mono);
-      font-size: 12px;
-      padding: 4px 7px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.18);
-      color: rgba(255,255,255,.85);
-      background: rgba(0,0,0,.18);
-    }
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ padding: 10px 12px; border-bottom: 1px solid rgba(138,111,255,.12); text-align:left; vertical-align:top; }
+    th{ font-size: 11px; letter-spacing:.14em; text-transform:uppercase; color: rgba(243,245,255,.62); font-family: var(--mono); }
+    td{ font-size: 13px; }
 
-    .toast {
+    .money{ font-family: var(--mono); white-space:nowrap; }
+    .muted{ color: rgba(243,245,255,.70); }
+    .small{ font-size: 12px; color: rgba(243,245,255,.72); }
+
+    .barwrap{ height: 7px; border-radius: 999px; background: rgba(243,245,255,.08); overflow:hidden; margin-top: 8px; }
+    .barfill{ height: 100%; width: 0%; background: linear-gradient(90deg, rgba(138,111,255,.95), rgba(64,224,208,.90)); }
+
+    .toast{
       position: fixed;
       left: calc(14px + var(--safe-left));
       right: calc(14px + var(--safe-right));
@@ -266,199 +254,240 @@
       margin: 0 auto;
       padding: 12px 12px;
       border-radius: 14px;
-      border: 1px solid rgba(18,255,241,.30);
-      background: rgba(0,10,27,.76);
+      border: 1px solid rgba(64,224,208,.28);
+      background: rgba(6,7,19,.78);
       backdrop-filter: blur(12px);
-      box-shadow: 0 20px 70px rgba(0,0,0,.55);
-      display: none;
+      box-shadow: 0 22px 80px rgba(0,0,0,.55);
+      display:none;
     }
-    .toast.show { display: block; }
+    .toast.show{ display:block; }
 
-    .bottomBar {
+    .bottomBar{
       position: fixed;
-      left: 0; right: 0;
-      bottom: 0;
-      z-index: 70;
-      padding:
-        10px calc(14px + var(--safe-right))
-        calc(10px + var(--safe-bottom)) calc(14px + var(--safe-left));
-      background: linear-gradient(180deg, rgba(0,10,27,0), rgba(0,10,27,.86) 30%, rgba(0,10,27,.95));
-      border-top: 1px solid rgba(18,150,255,.18);
+      left:0; right:0; bottom:0;
+      z-index:70;
+      padding: 10px calc(14px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(14px + var(--safe-left));
+      background: linear-gradient(180deg, rgba(6,7,19,0), rgba(6,7,19,.80) 30%, rgba(6,7,19,.95));
+      border-top:1px solid rgba(138,111,255,.16);
       backdrop-filter: blur(10px);
     }
-    .bottomInner {
-      max-width: 980px;
-      margin: 0 auto;
-      display: grid;
+    .bottomInner{
+      max-width:980px;
+      margin:0 auto;
+      display:grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap:10px;
     }
 
-    dialog {
+    .screen{ display:none; }
+    .screen[data-active="1"]{ display:block; }
+
+    dialog{
       width: min(720px, calc(100vw - 26px));
-      border: 1px solid rgba(18,150,255,.25);
+      border:1px solid rgba(138,111,255,.22);
       border-radius: 18px;
-      background: rgba(0,10,27,.86);
+      background: rgba(6,7,19,.88);
       backdrop-filter: blur(14px);
-      color: var(--white);
+      color: var(--ink);
       box-shadow: 0 26px 90px rgba(0,0,0,.65);
-      padding: 0;
+      padding:0;
     }
-    dialog::backdrop { background: rgba(0,0,0,.55); }
-    .modal { padding: 14px; }
-    .modalHead { display:flex; justify-content:space-between; align-items:center; gap: 10px; padding: 14px; border-bottom: 1px solid rgba(18,150,255,.18); }
+    dialog::backdrop{ background: rgba(0,0,0,.55); }
+    .modalHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding: 14px; border-bottom:1px solid rgba(138,111,255,.14); }
+    .modal{ padding: 14px; }
 
-    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-    .dangerText { color: rgba(255,18,150,.95); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .btn { transition: none; }
-      .ledger-ribbon:before { display:none; }
+    @media (max-width: 520px){
+      .status{ display:none; }
+      .brand span{ display:none; }
+      .row2,.grid2{ grid-template-columns: 1fr; }
+      h1{ font-size: 22px; }
     }
 
-    :focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 4px rgba(18,255,241,.18), 0 0 0 1px rgba(18,255,241,.65) inset;
-      border-radius: 12px;
+    @media (prefers-reduced-motion: reduce){
+      .btn{ transition:none; }
     }
 
-    /* Small screens: keep actions reachable */
-    @media (max-width: 520px) {
-      .status { display:none; }
-      h1 { font-size: 20px; }
-      .grid2 { grid-template-columns: 1fr; }
-      .row2 { grid-template-columns: 1fr; }
+    .srOnly{
+      position:absolute !important;
+      width:1px; height:1px;
+      padding:0; margin:-1px;
+      overflow:hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space:nowrap;
+      border:0;
     }
+
+    /* Ensure app is visible even if JS fails */
+    #app[hidden]{ display:block; }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="bar">
+  <div class="topbar">
     <div class="brand" aria-label="CashBash">
       <b>CashBash</b>
+      <span>local‑first</span>
     </div>
+
     <div class="status" aria-live="polite">
       <div class="dot" id="syncDot"></div>
-      <small id="syncLabel">Wird initialisiert…</small>
+      <small id="syncLabel">Startet…</small>
     </div>
+
     <button class="btn ghost" id="btnTripsHeader">Reisen</button>
     <button class="btn ghost" id="btnProfile">Profil</button>
   </div>
 </header>
 
-<main class="app" id="app" hidden>
-  <section class="card" id="activeTripCard" data-screen="expenses">
-    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap">
-      <div>
-        <div class="eyebrow">Aktive Reise</div>
-        <h1 id="tripTitle">—</h1>
+<main id="app">
+
+  <!-- Expenses Screen -->
+  <section class="screen" id="screenExpenses" data-active="1">
+
+    <section class="card" id="activeTripCard">
+      <div class="eyebrow">Aktive Reise</div>
+      <h1 id="tripTitle">—</h1>
+      <div class="sub" id="tripMeta">—</div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <div class="eyebrow">Ausgabe erfassen</div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label for="amount">Betrag</label>
+          <input id="amount" inputmode="decimal" placeholder="z.B. 42.50" />
+        </div>
+        <div>
+          <label for="ccy">Währung</label>
+          <select id="ccy"></select>
+        </div>
       </div>
-    </div>
+
+      <label for="what">Wofür</label>
+      <input id="what" placeholder="z.B. Abendessen" />
+
+      <label for="payer">Gezahlt von</label>
+      <select id="payer"></select>
 
 
-  </section>
-
-  <section class="card" style="margin-top:14px" data-screen="expenses">
-    <div class="eyebrow">Ausgabe erfassen</div>
-    <div class="small" style="margin-top:8px;color:rgba(255,255,255,.68)">Aktive Reise: <b id="activeTripInline">—</b></div>
-
-    <div class="row2" style="margin-top:12px">
-      <div>
-        <label for="amount">Betrag</label>
-        <input id="amount" inputmode="decimal" placeholder="z.B. 42.50" />
+      <div style="margin-top:14px">
+        <div class="eyebrow">Bezahlt für</div>
+        <div class="small">Tippen zum Abwählen</div>
       </div>
-      <div>
-        <label for="ccy">Währung</label>
-        <select id="ccy"></select>
+
+      <div class="tabs" id="participants" style="margin-top:10px"></div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn secondary" id="btnAddExpense">Ausgabe hinzufügen</button>
       </div>
-    </div>
+    </section>
 
-    <label for="what">Wofür</label>
-    <input id="what" placeholder="Dinner, Uber, Museum…" />
 
-    <div class="row2">
-      <div>
-        <label for="payer">Gezahlt von</label>
-        <select id="payer"></select>
+
+    <section class="list">
+      <div class="head">
+        <b>Ausgaben (Events)</b>
+        <span class="small">Löschen = Voiding‑Event · <span class="kbd" id="expenseCount">0</span></span>
       </div>
-    </div>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Wofür</th>
+              <th>Von</th>
+              <th>Für</th>
+              <th>Betrag</th>
+              <th></th>
+            </tr>
+          </thead>
+          <caption class="srOnly">Tippe auf eine Zeile für Details.</caption>
+          <tbody id="expenses"></tbody>
+        </table>
+      </div>
+    </section>
 
-    <label>Bezahlt für</label>
-    <div class="tabs" id="participants"></div>
+    <section class="card" id="actionsCard" style="margin-top:14px">
+      <div class="eyebrow">Reise‑Aktionen</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+        <button class="btn secondary" id="btnInvite">Invite erstellen</button>
+        <button class="btn" id="btnJoin">Beitreten (Code)</button>
+      </div>
+    </section>
 
   </section>
 
-  <section class="list" aria-label="Ausgabenliste" data-screen="expenses">
-    <div class="head">
-      <b>Ausgaben (Events)</b>
-      <div class="small">Löschen = Voiding‑Event</div>
-    </div>
-    <div style="overflow:auto">
-      <table>
-        <thead>
-          <tr>
-            <th>Zeit</th>
-            <th>Wofür</th>
-            <th>Gezahlt von</th>
-            <th>Betrag</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="expenses"></tbody>
-      </table>
-    </div>
+  <!-- Dashboard Screen -->
+  <section class="screen" id="screenDashboard" data-active="0">
+    <section class="card">
+      <div class="eyebrow">Dashboard</div>
+      <h1>Wer hat wie viel getragen?</h1>
+      <div class="sub">
+        Option A: Es zählen nur Ausgaben in Basiswährung (<span class="kbd" id="dashBase">—</span>). FX‑Ausgaben werden angezeigt, aber nicht in die Beträge gerechnet.
+      </div>
+
+      <div class="pill" style="margin-top:14px">
+        <div>
+          <div class="eyebrow">Abschluss (ECB)</div>
+          <div class="small">Tageskurs laden und Snapshot speichern</div>
+        </div>
+        <button class="btn" id="btnSettle">Öffnen</button>
+      </div>
+
+      <div class="pill" style="margin-top:14px">
+        <div>
+          <div class="eyebrow">Reise‑Aktionen</div>
+          <div class="small">Invite/Join sind im Ausgaben‑Tab ganz unten.</div>
+        </div>
+        <button class="btn ghost" id="btnGoActions">Zum Ende</button>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div class="pill">
+          <b>Total (Base)</b>
+          <span class="money" id="dashTotal">—</span>
+        </div>
+        <div class="pill">
+          <b>Du (Netto)</b>
+          <span class="money" id="netNow">—</span>
+        </div>
+      </div>
+
+      <div class="list" style="margin-top:14px">
+        <div class="head">
+          <b>Wenn wir jetzt ausgleichen…</b>
+          <span class="small">Base‑Währung · <span class="kbd" id="transferCount">0</span> Transfers</span>
+        </div>
+        <div style="padding: 12px 14px" id="settlement">—</div>
+      </div>
+
+      <div class="list" style="margin-top:14px">
+        <div class="head">
+          <b>Ranking (Zahlungen)</b>
+          <span class="small" id="dashNote">—</span>
+        </div>
+        <div style="padding: 12px 14px" id="ranking">—</div>
+      </div>
+
+    </section>
   </section>
 
-  <section class="card" style="margin-top:14px" data-screen="expenses">
-    <h2>Reise</h2>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
-      <button class="btn secondary" id="btnInvite">Code‑Invite</button>
-      <button class="btn" id="btnJoin">Mit Code beitreten</button>
-      <button class="btn danger" id="btnSettle">Abschluss (ECB)</button>
-    </div>
-
-    <div class="small" style="margin-top:10px;color:rgba(255,255,255,.62)">
-      Abschluss: Abschlusswährung wählen → ECB‑Tageskurs abrufen → Kurs speichern → Snapshot erzeugen.
-    </div>
-  </section>
-
-  <section class="card" id="dashboard" style="margin-top:14px" hidden>
-    <div class="eyebrow">Dashboard</div>
-    <h1 style="margin-top:4px">Ausgaben je Person</h1>
-    <div class="sub">Option A: nur Basiswährungs‑Ausgaben werden berücksichtigt.</div>
-
-    <div class="grid2" style="margin-top:12px">
-      <div class="pill"><b>Total</b><span class="money" id="totalSpent">—</span></div>
-      <div class="pill"><b>Wenn wir jetzt ausgleichen</b><span class="money" id="netNow">—</span></div>
-      <div class="pill"><b>Top‑Zahler:in</b><span class="money" id="topPayer">—</span></div>
-      <div class="pill"><b>Ausgaben</b><span class="money" id="expenseCount">—</span></div>
-    </div>
-
-    <div id="dashPeople" style="margin-top:12px">—</div>
-
-    <div class="pill" style="margin-top:12px">
-      <b>Total (Base)</b>
-      <span class="money" id="dashTotal">—</span>
-    </div>
-
-    <div class="small muted" style="margin-top:16px;opacity:.55" id="dashLedger">hash: —</div>
-  </section>
 </main>
 
-<div class="bottomBar" id="bottomBar" hidden>
+<div class="bottomBar" id="bottomBar">
   <div class="bottomInner">
     <button class="btn secondary" id="tabExpenses" aria-current="page">Ausgaben</button>
     <button class="btn ghost" id="tabDashboard">Dashboard</button>
   </div>
 </div>
 
+<!-- Onboarding -->
 <dialog id="modalOnboarding">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Onboarding</div>
-      <div style="font-weight:800">Reise wählen</div>
+      <div style="font-family:var(--display);font-weight:700">Reise wählen</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
@@ -471,109 +500,145 @@
   </div>
 </dialog>
 
+<!-- Profile -->
 <dialog id="modalProfile">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Profil</div>
-      <div style="font-weight:800">Device‑ID</div>
+      <div style="font-family:var(--display);font-weight:700">Name & Device‑ID</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <div class="eyebrow">Du bist</div>
-    <div style="font-size:18px;font-weight:900" id="profileUserName">—</div>
+    <label for="profileName">Dein Name (global)</label>
+    <input id="profileName" placeholder="z.B. Nils" />
 
-    <div class="small muted" style="margin-top:10px">Device‑ID</div>
-    <div style="margin-top:6px"><span class="kbd" id="profileDeviceId">—</span></div>
+    <div class="small" style="margin-top:10px">Device‑ID</div>
+    <div><span class="kbd" id="profileDeviceId">—</span></div>
 
-    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn ghost" data-close>Schließen</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn secondary" id="btnSaveProfile">Speichern</button>
     </div>
   </div>
 </dialog>
 
+<!-- Expense details -->
+<dialog id="modalExpenseDetails">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Ausgabe</div>
+      <div style="font-family:var(--display);font-weight:700" id="expDetTitle">—</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small muted" id="expDetWhen">—</div>
+
+    <div class="list" style="margin-top:12px">
+      <div style="padding: 12px 14px">
+        <div class="row2" style="gap:12px">
+          <div>
+            <div class="eyebrow">Betrag</div>
+            <div class="money" id="expDetAmount">—</div>
+          </div>
+          <div>
+            <div class="eyebrow">Gezahlt von</div>
+            <div id="expDetPayer">—</div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="eyebrow">Gezahlt für</div>
+          <div id="expDetFor" style="margin-top:6px">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="small muted" style="margin-top:10px">In der Tabelle sind die Infos bewusst kompakt. Tippe auf eine Zeile für Details.</div>
+  </div>
+</dialog>
+
+<!-- Invite -->
 <dialog id="modalInvite">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Invite</div>
-      <div style="font-weight:800">Reise beitreten</div>
+      <div style="font-family:var(--display);font-weight:700">Code teilen</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <div class="small">Im MVP als Code. In der vollen Version: QR‑Code + Scan.</div>
+    <div class="small">Invite‑only. Der Code enthält Reise‑Info (verschlüsselt) + Relay‑Topic.</div>
     <label for="inviteCode">Invite‑Code</label>
-    <input id="inviteCode" placeholder="wird generiert…" />
+    <input id="inviteCode" readonly />
 
-    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
-      <button class="btn secondary" id="btnCopyInvite">Code kopieren</button>
-      <button class="btn" id="btnRefreshInvite">Neu generieren</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn" id="btnCopyInvite">Code kopieren</button>
+      <button class="btn danger" id="btnRefreshInvite">Neu generieren</button>
     </div>
   </div>
 </dialog>
 
+<!-- Join -->
 <dialog id="modalJoin">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Beitreten</div>
-      <div style="font-weight:800">Invite eingeben</div>
+      <div style="font-family:var(--display);font-weight:700">Invite eingeben</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <div class="small">Invite‑only. E2E: der Invite transportiert Reise‑Info (verschlüsselt) + Relay‑Topic.</div>
     <label for="joinCode">Invite‑Code</label>
     <input id="joinCode" placeholder="Code einfügen" />
 
-    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
-      <button class="btn" id="btnDoJoin">Beitreten</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn secondary" id="btnDoJoin">Beitreten</button>
     </div>
   </div>
 </dialog>
 
+<!-- Trips -->
 <dialog id="modalTrips">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Reisen</div>
-      <div style="font-weight:800">Übersicht</div>
+      <div style="font-family:var(--display);font-weight:700">Übersicht</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <div class="small">Mehrere Reisen werden lokal gespeichert; Geräte sind je Reise separat verknüpft.</div>
+    <div class="small">Mehrere Reisen sind lokal gespeichert. Geräte sind je Reise separat verknüpft.</div>
     <div id="tripList" style="margin-top:10px"></div>
-
-    <div style="margin-top:12px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
       <button class="btn" id="btnNewTrip">Neue Reise anlegen</button>
     </div>
   </div>
 </dialog>
 
+<!-- Settle -->
 <dialog id="modalSettle">
   <div class="modalHead">
     <div>
       <div class="eyebrow">Abschluss</div>
-      <div style="font-weight:800">ECB Tageskurs</div>
+      <div style="font-family:var(--display);font-weight:700">ECB Tageskurs</div>
     </div>
     <button class="btn ghost small" data-close>Schließen</button>
   </div>
   <div class="modal">
-    <div class="small">Beim Abschluss wird der Tageskurs geladen und gespeichert (Snapshot). Fallback: letzter gespeicherter Kurs.</div>
+    <div class="small">Beim Abschluss wird der Tageskurs geladen und gespeichert (Snapshot). Fallback: letzter gespeicherter Kurs. Wenn kein Fallback existiert, kannst du manuell speichern.</div>
 
     <label for="settleCcy">Abschlusswährung</label>
     <select id="settleCcy"></select>
 
-    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
       <button class="btn" id="btnFetchEcb">ECB Kurs holen</button>
       <button class="btn secondary" id="btnFinalize">Snapshot speichern</button>
     </div>
 
-    <div class="card" id="manualFx" style="margin-top:14px; background: rgba(255,18,150,.06); border-color: rgba(255,18,150,.20)" hidden>
+    <section class="card" id="manualFx" style="margin-top:14px; border-color: rgba(255,59,122,.22); background: linear-gradient(180deg, rgba(255,59,122,.10), rgba(138,111,255,.06));" hidden>
       <div class="eyebrow">Fallback</div>
-      <div style="font-weight:800">Manueller Kurs</div>
-      <div class="small" style="margin-top:6px;color:rgba(255,255,255,.72)">
-        Nur nötig, wenn ECB nicht erreichbar ist und kein gespeicherter Kurs existiert.
-      </div>
+      <div style="font-family:var(--display);font-weight:700">Manueller Kurs</div>
+      <div class="small" style="margin-top:6px">Format: <span class="kbd">1 EUR = X</span> in Zielwährung.</div>
 
       <div class="row2" style="margin-top:12px">
         <div>
@@ -585,15 +650,10 @@
           <input id="manualFxRate" inputmode="decimal" placeholder="1 EUR = X" />
         </div>
       </div>
-
-      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
         <button class="btn" id="btnSaveManualFx">Manuellen Kurs speichern</button>
       </div>
-
-      <div class="small" style="margin-top:10px;color:rgba(255,255,255,.62)">
-        Format: <span class="kbd">1 EUR = X</span> in Zielwährung.
-      </div>
-    </div>
+    </section>
 
     <div class="small" style="margin-top:12px" id="ecbStatus">—</div>
   </div>
@@ -601,7 +661,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<div class="toast" id="updateToast" role="status" aria-live="polite" style="border-color: rgba(18,150,255,.35); display:none">
+<div class="toast" id="updateToast" role="status" aria-live="polite" style="border-color: rgba(138,111,255,.26); display:none">
   <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
     <div>
       <b>Update verfügbar</b>
@@ -613,35 +673,27 @@
 
 <script src="https://cdn.jsdelivr.net/npm/gun@0.2020.1241/gun.js"></script>
 <script>
-  // CashBash MVP (GitHub Pages):
-  // - Local-first: IndexedDB
-  // - E2E transport: ciphertext blobs only (simplified MVP encryption)
-  // - Sync: Gun.js relay (store-and-forward)
-  // NOTE: This MVP uses a passphrase-based trip key. A full version would use ECDH per member + proper key distribution.
+(() => {
+  'use strict';
 
   // ---------- Utilities ----------
   const $ = (id) => document.getElementById(id);
 
   function toast(msg){
     const t = $('toast');
-    t.textContent = msg;
+    t.textContent = String(msg || '');
     t.classList.add('show');
     clearTimeout(toast._t);
     toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
   }
 
-  // Update UI
   function showUpdateBanner(waitingWorker){
     const u = $('updateToast');
     if (!u) return;
     u.style.display = 'block';
     u.classList.add('show');
     $('btnReloadUpdate').onclick = () => {
-      try {
-        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
-      } catch {}
-      // controllerchange handler will reload.
-      // Fallback if controllerchange doesn't fire (some iOS edge cases):
+      try { waitingWorker.postMessage({ type: 'SKIP_WAITING' }); } catch {}
       setTimeout(() => window.location.reload(), 1200);
     };
   }
@@ -670,14 +722,15 @@
   }
 
   function fmtMoney(amount, ccy){
+    const v = Number(amount);
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy }).format(amount);
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy }).format(v);
     } catch {
-      return `${amount.toFixed(2)} ${ccy}`;
+      return `${v.toFixed(2)} ${ccy}`;
     }
   }
 
-  // ---------- IndexedDB (tiny wrapper) ----------
+  // ---------- IndexedDB ----------
   const DB_NAME = 'cashbash_v1';
   const DB_VER = 1;
   const STORES = ['meta','trips','events','fx'];
@@ -740,7 +793,20 @@
     });
   }
 
-  // ---------- Crypto (MVP: passphrase -> AES-GCM) ----------
+  // ---------- Crypto (MVP passphrase -> AES-GCM) ----------
+  function b64(bytes){
+    let bin='';
+    bytes.forEach(b=>bin += String.fromCharCode(b));
+    return btoa(bin);
+  }
+
+  function unb64(s){
+    const bin = atob(s);
+    const bytes = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
   async function pbkdf2Key(passphrase, saltBytes){
     const enc = new TextEncoder();
     const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
@@ -751,18 +817,6 @@
       false,
       ['encrypt','decrypt']
     );
-  }
-
-  function b64(bytes){
-    let bin='';
-    bytes.forEach(b=>bin += String.fromCharCode(b));
-    return btoa(bin);
-  }
-  function unb64(s){
-    const bin = atob(s);
-    const bytes = new Uint8Array(bin.length);
-    for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
   }
 
   async function encryptJSON(key, obj){
@@ -784,126 +838,28 @@
     user: { name: null, deviceId: null },
     activeTripId: null,
     trips: new Map(),
-    // derived at runtime
     activeTrip: null,
     tripKey: null,
     gun: null,
     gunNode: null,
     lastSyncAt: null,
-    ui: { tab: 'expenses' } // 'expenses' | 'dashboard'
+    ui: { tab: 'expenses' }
   };
 
   const COMMON_CCY = ['EUR','USD','GBP','CHF','JPY','SEK','NOK','DKK','CAD','AUD','PLN','CZK','HUF'];
 
-  // ---------- Trip Delete (Owner hard delete) ----------
-  // Event type:
-  // - TripDeleted { tripId }
-
-  function isTripOwner(trip){
-    return !!trip && !!trip.ownerDeviceId && state.user.deviceId === trip.ownerDeviceId;
-  }
-
-  async function hardDeleteTripLocal(tripId){
-    // delete trip
-    await idbDel('trips', tripId);
-
-    // delete related events
-    const keys = await idbKeys('events');
-    for (const k of keys){
-      if (String(k).startsWith(tripId + ':')) await idbDel('events', k);
-    }
-
-    // delete stored passphrase
-    await idbDel('meta', `tripPass:${tripId}`);
-
-    // fx snapshots and ECB are shared; keep them (optional), but remove trip-related snapshots
-    const fxKeys = await idbKeys('fx');
-    for (const k of fxKeys){
-      if (String(k).startsWith('snapshot:')){
-        const snap = await idbGet('fx', k);
-        if (snap && snap.tripId === tripId) await idbDel('fx', k);
-      }
-    }
-
-    // update in-memory
-    state.trips.delete(tripId);
-    if (state.activeTripId === tripId){
-      state.activeTripId = null;
-      state.activeTrip = null;
-      await idbDel('meta','activeTripId');
-    }
-  }
-
-  async function publishTripDelete(trip){
-    // Reuse existing gun node (trip relayTopic) to publish a delete marker
-    // NOTE: This is not authenticated beyond ownerDeviceId in the trip object (MVP).
-    if (!state.gun) initGun();
-    if (!state.gun) return;
-
-    const node = state.gun.get('cashbash').get(trip.relayTopic).get('trip');
-    const msg = { t: Date.now(), tripId: trip.id, by: state.user.deviceId };
-    // encrypt as well to avoid plaintext metadata
-    if (!state.tripKey){
-      const pass = await idbGet('meta', `tripPass:${trip.id}`);
-      if (!pass) return;
-      const salt = unb64(trip.keySaltB64);
-      state.tripKey = await pbkdf2Key(pass, salt);
-    }
-    const blob = await encryptJSON(state.tripKey, { id: randomId('evt'), type: 'TripDeleted', t: Date.now(), data: { tripId: trip.id }, meta: msg });
-    node.put(blob);
-  }
-
-  async function subscribeTripDelete(trip){
-    if (!state.gun) initGun();
-    if (!state.gun) return;
-    const node = state.gun.get('cashbash').get(trip.relayTopic).get('trip');
-    node.on(async (data) => {
-      if (!data || !data.iv || !data.ct) return;
-      try {
-        const ev = await decryptJSON(state.tripKey, data);
-        if (ev && ev.type === 'TripDeleted' && ev.data?.tripId === trip.id){
-          await hardDeleteTripLocal(trip.id);
-          toast('Reise wurde für alle gelöscht.');
-          await ensureTripSelection();
-        }
-      } catch {}
-    });
-  }
-
-  async function ensureTripSelection(){
-    // If we have an active trip, just render.
-    const active = await idbGet('meta','activeTripId');
-    if (active){
-      state.activeTripId = active;
-      const t = await idbGet('trips', active);
-      if (t){
-        state.activeTrip = t;
-        state.trips.set(t.id, t);
-        await startTripSync(t);
-        await subscribeTripDelete(t);
-        render();
-        return;
-      }
-    }
-
-    // No active trip: show onboarding modal
-    mOnboarding.showModal();
-  }
-
-  // ---------- Event Log Model ----------
-  // Event types:
-  // - ExpenseCreated { expenseId, amount, ccy, what, payerMemberId, participantMemberIds }
-  // - ExpenseVoided  { targetExpenseId }
+  // ---------- Event model ----------
+  // ExpenseCreated { expenseId, amount, ccy, what, payerMemberId, participantMemberIds }
+  // ExpenseVoided  { targetExpenseId }
+  // TripDeleted    { tripId }
 
   function applyEvents(events){
     const created = new Map();
     const voided = new Set();
-
     for (const e of events){
       if (e.type === 'ExpenseCreated') created.set(e.data.expenseId, e);
       if (e.type === 'ExpenseVoided') voided.add(e.data.targetExpenseId);
     }
-
     const expenses = [];
     for (const [expenseId, ev] of created.entries()){
       if (!voided.has(expenseId)) expenses.push(ev);
@@ -912,14 +868,12 @@
     return expenses;
   }
 
-  function computeBalancesBase(expenses, trip){
-    // MVP: treat all amounts as already base currency for settlement preview.
-    // Full version uses FX conversion snapshots.
+  function computeBalancesBase(expensesBaseOnly, trip){
     const members = trip.members.map(m=>m.id);
     const bal = new Map(members.map(id=>[id,0]));
-    for (const ev of expenses){
+    for (const ev of expensesBaseOnly){
       const d = ev.data;
-      const amount = d.amount;
+      const amount = Number(d.amount) || 0;
       const payer = d.payerMemberId;
       const parts = d.participantMemberIds || [];
       if (!parts.length) continue;
@@ -929,7 +883,6 @@
         bal.set(pid, (bal.get(pid)||0) - share);
       }
     }
-    // round
     for (const [k,v] of bal.entries()) bal.set(k, Math.round(v*100)/100);
     return bal;
   }
@@ -959,19 +912,22 @@
     return transfers;
   }
 
-  // ---------- Trips ----------
+  function ledgerFingerprint(events){
+    const payload = JSON.stringify(events.map(e=>({id:e.id,t:e.t,type:e.type,ref:e.ref||null,data:e.data})));
+    return 'hash: ' + stableHash(payload);
+  }
+
+  // ---------- Trips / ownership ----------
   function defaultTrip(){
     return {
       id: randomId('trip'),
       title: 'Neue Reise',
       baseCurrency: 'EUR',
       quickCurrencies: ['EUR','USD','GBP','CHF'],
-      // member ids are stable and unique
-      members: [
-        { id: randomId('m'), name: state.user.name }
-      ],
-      // relay topic for gun
-      relayTopic: randomId('topic')
+      members: [ { id: randomId('m'), name: state.user.name } ],
+      relayTopic: randomId('topic'),
+      ownerDeviceId: state.user.deviceId,
+      keySaltB64: null
     };
   }
 
@@ -979,76 +935,125 @@
     return trip.members.find(m=>m.id===id)?.name || id;
   }
 
-  // ---------- Sync (Gun.js) ----------
-  // Strategy:
-  // - Each trip has relayTopic.
-  // - We publish encrypted event blobs keyed by eventId.
-  // - Receivers decrypt and store events locally.
+  function isTripOwner(trip){
+    return !!trip && !!trip.ownerDeviceId && state.user.deviceId === trip.ownerDeviceId;
+  }
 
+  async function hardDeleteTripLocal(tripId){
+    await idbDel('trips', tripId);
+
+    const ekeys = await idbKeys('events');
+    for (const k of ekeys){
+      if (String(k).startsWith(tripId + ':')) await idbDel('events', k);
+    }
+
+    await idbDel('meta', `tripPass:${tripId}`);
+
+    const fxKeys = await idbKeys('fx');
+    for (const k of fxKeys){
+      if (String(k).startsWith('snapshot:')){
+        const snap = await idbGet('fx', k);
+        if (snap && snap.tripId === tripId) await idbDel('fx', k);
+      }
+    }
+
+    state.trips.delete(tripId);
+    if (state.activeTripId === tripId){
+      state.activeTripId = null;
+      state.activeTrip = null;
+      await idbDel('meta','activeTripId');
+    }
+  }
+
+  // ---------- Sync (Gun) ----------
   function initGun(){
     if (state.gun) return;
     try {
       state.gun = Gun({ peers: ['https://gun-manhattan.herokuapp.com/gun'] });
     } catch (e){
-      console.warn('Gun init failed', e);
+      // no console in some PWAs; keep silent
     }
   }
 
   async function startTripSync(trip){
     initGun();
     if (!state.gun){
-      $('syncDot').style.background = 'rgba(255,255,255,.25)';
-      $('syncLabel').textContent = 'Offline (kein Relay)';
+      setSyncState('offline', 'Offline (kein Relay)');
       return;
     }
 
-    // Derive trip key from stored passphrase.
     const pass = await idbGet('meta', `tripPass:${trip.id}`);
     if (!pass){
-      $('syncDot').style.background = 'rgba(255,255,255,.25)';
-      $('syncLabel').textContent = 'Sync pausiert (kein Schlüssel)';
+      setSyncState('paused', 'Sync pausiert (kein Schlüssel)');
       return;
     }
 
     const salt = unb64(trip.keySaltB64);
     state.tripKey = await pbkdf2Key(pass, salt);
-    state.gunNode = state.gun.get('cashbash').get(trip.relayTopic).get('events');
 
-    $('syncDot').style.background = 'var(--cyan)';
-    $('syncLabel').textContent = 'Sync aktiv (Relay)';
+    const base = state.gun.get('cashbash').get(trip.relayTopic);
+    state.gunNode = base.get('events');
+    const tripNode = base.get('trip');
 
-    // Subscribe
-    state.gunNode.map().on(async (data, key) => {
+    setSyncState('live', 'Sync aktiv (Relay)');
+
+    // trip delete marker
+    tripNode.map().on(async (data) => {
+      if (!data || !data.iv || !data.ct) return;
+      try {
+        const msg = await decryptJSON(state.tripKey, data);
+        if (msg && msg.type === 'TripDeleted' && msg.tripId === trip.id){
+          await hardDeleteTripLocal(trip.id);
+          toast('Reise wurde gelöscht.');
+          await ensureTrip();
+          renderAll();
+        }
+      } catch {}
+    });
+
+    // events
+    state.gunNode.map().on(async (data) => {
       if (!data || !data.iv || !data.ct) return;
       try {
         const ev = await decryptJSON(state.tripKey, data);
         await upsertEvent(trip.id, ev, {fromSync:true});
-      } catch (e){
-        // ignore decrypt failures (wrong key or corrupted)
-      }
+      } catch {}
     });
   }
 
   async function publishEvent(trip, ev){
     if (!state.gunNode || !state.tripKey) return;
     const blob = await encryptJSON(state.tripKey, ev);
-    // Store-and-forward: relay holds ciphertext
     state.gunNode.get(ev.id).put(blob);
   }
 
-  // ---------- Local storage of events ----------
-  async function tripEventKey(tripId, eventId){
+  async function publishTripDelete(trip){
+    if (!state.gun) initGun();
+    if (!state.gun) return;
+
+    const pass = await idbGet('meta', `tripPass:${trip.id}`);
+    if (!pass) return;
+    const salt = unb64(trip.keySaltB64);
+    const key = await pbkdf2Key(pass, salt);
+
+    const node = state.gun.get('cashbash').get(trip.relayTopic).get('trip');
+    const msg = { type: 'TripDeleted', tripId: trip.id, t: Date.now(), by: state.user.deviceId };
+    const blob = await encryptJSON(key, msg);
+    node.get('deleted').put(blob);
+  }
+
+  // ---------- Local events store ----------
+  function tripEventKey(tripId, eventId){
     return `${tripId}:${eventId}`;
   }
 
   async function upsertEvent(tripId, ev, {fromSync=false}={}){
-    await idbSet('events', await tripEventKey(tripId, ev.id), ev);
-    if (!fromSync && state.activeTrip && state.activeTrip.id === tripId) {
-      // publish
+    await idbSet('events', tripEventKey(tripId, ev.id), ev);
+    if (!fromSync && state.activeTrip && state.activeTrip.id === tripId){
       publishEvent(state.activeTrip, ev);
     }
     state.lastSyncAt = Date.now();
-    render();
+    renderAll();
   }
 
   async function loadTripEvents(tripId){
@@ -1064,18 +1069,14 @@
     return events;
   }
 
-  // ---------- ECB FX Fetch ----------
-  // Minimal: fetch latest daily rates from ECB as XML.
-  // Endpoint (public): https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
-  // GitHub Pages: allowed via CORS? Often yes, but can be blocked. We store last rates and allow fallback.
-
+  // ---------- FX (ECB + fallback + manual) ----------
   async function fetchEcbDaily(){
     const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error('ECB fetch failed');
     const text = await res.text();
     const xml = new DOMParser().parseFromString(text, 'text/xml');
-    const cubes = Array.from(xml.querySelectorAll('Cube[ currency ][ rate ]'));
+    const cubes = Array.from(xml.querySelectorAll('Cube[currency][rate]'));
     const rates = { EUR: 1 };
     for (const c of cubes){
       const cur = c.getAttribute('currency');
@@ -1087,33 +1088,143 @@
     return { date, rates, source: 'ECB' };
   }
 
-  function convertViaEur(amount, from, to, rates){
-    // ECB rates are 1 EUR = rate * currency
-    // Convert: from -> EUR -> to
-    if (from === to) return amount;
-    if (!rates[from] || !rates[to]) throw new Error('Missing rate');
-    const eur = from === 'EUR' ? amount : (amount / rates[from]);
-    const out = to === 'EUR' ? eur : (eur * rates[to]);
-    return out;
+  async function saveManualFx(){
+    const ccy = ($('manualFxCcy').value || '').trim().toUpperCase();
+    const rate = parseFloat(($('manualFxRate').value || '').replace(',','.'));
+    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
+    if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
+
+    const date = new Date().toISOString().slice(0,10);
+    const daily = { date, source: 'manual', rates: { EUR: 1, [ccy]: rate } };
+    await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+    await idbSet('meta','lastEcbDate', daily.date);
+
+    $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
+    $('manualFx').hidden = true;
+    toast('Manueller Kurs gespeichert.');
   }
 
-  // ---------- UI / Rendering ----------
-  function activeTrip(){ return state.activeTrip; }
-
-  function ledgerFingerprint(events){
-    const payload = JSON.stringify(events.map(e=>({id:e.id,t:e.t,type:e.type,ref:e.ref||null,data:e.data})))
-    return 'hash: ' + stableHash(payload);
+  async function fetchEcb(){
+    $('ecbStatus').textContent = 'Hole ECB…';
+    try {
+      const daily = await fetchEcbDaily();
+      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+      await idbSet('meta','lastEcbDate', daily.date);
+      $('ecbStatus').textContent = `ECB OK · ${daily.date} · ${Object.keys(daily.rates).length} Währungen`;
+      $('manualFx').hidden = true;
+      toast('ECB Kurs geladen.');
+    } catch {
+      const lastDate = await idbGet('meta','lastEcbDate');
+      if (lastDate){
+        $('ecbStatus').textContent = `Offline/Fallback · letzter Kurs: ${lastDate}`;
+        $('manualFx').hidden = true;
+        toast('ECB nicht erreichbar — Fallback verfügbar.');
+      } else {
+        $('ecbStatus').textContent = 'ECB nicht erreichbar und kein gespeicherter Kurs vorhanden.';
+        $('manualFx').hidden = false;
+        const settle = $('settleCcy').value || (state.activeTrip?.baseCurrency || 'EUR');
+        $('manualFxCcy').value = settle;
+        $('manualFxRate').value = '';
+        toast('Bitte Kurs manuell eingeben.');
+      }
+    }
   }
 
+  async function finalizeSnapshot(){
+    const trip = state.activeTrip;
+    if (!trip) return;
+
+    const settleCcy = $('settleCcy').value;
+    const lastDate = await idbGet('meta','lastEcbDate');
+    if (!lastDate){ toast('Bitte zuerst ECB Kurs holen oder manuell speichern.'); return; }
+
+    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+    if (!daily){ toast('Kursdaten fehlen.'); return; }
+
+    if (daily.source === 'manual' && settleCcy !== 'EUR' && !daily.rates?.[settleCcy]){
+      $('manualFx').hidden = false;
+      $('manualFxCcy').value = settleCcy;
+      toast(`Manueller Kurs fehlt für ${settleCcy}.`);
+      return;
+    }
+
+    const snapshot = {
+      id: randomId('snap'),
+      tripId: trip.id,
+      t: Date.now(),
+      baseCurrency: trip.baseCurrency,
+      settleCurrency: settleCcy,
+      fxDate: daily.date,
+      fxSource: daily.source,
+      rates: daily.rates
+    };
+
+    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
+    $('ecbStatus').textContent = `Snapshot gespeichert · ${snapshot.fxDate} · Quelle: ${snapshot.fxSource} · Ziel: ${snapshot.settleCurrency}`;
+    toast('Snapshot gespeichert.');
+  }
+
+  // ---------- UI: tabs ----------
+  function setTab(tab){
+    state.ui.tab = tab;
+
+    const isExp = tab === 'expenses';
+    $('screenExpenses').dataset.active = isExp ? '1' : '0';
+    $('screenDashboard').dataset.active = isExp ? '0' : '1';
+
+    $('tabExpenses').classList.toggle('secondary', isExp);
+    $('tabExpenses').classList.toggle('ghost', !isExp);
+    $('tabDashboard').classList.toggle('secondary', !isExp);
+    $('tabDashboard').classList.toggle('ghost', isExp);
+
+    $('tabExpenses').setAttribute('aria-current', isExp ? 'page' : 'false');
+    $('tabDashboard').setAttribute('aria-current', !isExp ? 'page' : 'false');
+
+    renderAll();
+  }
+
+  // ---------- UI: sync indicator ----------
+  function setSyncState(kind, label){
+    const dot = $('syncDot');
+    if (kind === 'live'){ dot.style.background = 'rgba(64,224,208,.95)'; }
+    else if (kind === 'paused'){ dot.style.background = 'rgba(255,202,92,.90)'; }
+    else { dot.style.background = 'rgba(243,245,255,.25)'; }
+    $('syncLabel').textContent = label;
+  }
+
+  // ---------- UI: modals ----------
+  function wireModal(id){
+    const d = $(id);
+    d.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>d.close()));
+    return d;
+  }
+
+  const mOnboarding = wireModal('modalOnboarding');
+  const mProfile = wireModal('modalProfile');
+  const mInvite = wireModal('modalInvite');
+  const mJoin = wireModal('modalJoin');
+  const mTrips = wireModal('modalTrips');
+  const mSettle = wireModal('modalSettle');
+  const mExpenseDetails = wireModal('modalExpenseDetails');
+
+  // close dialogs on backdrop click
+  function wireBackdropClose(){
+    document.querySelectorAll('dialog').forEach(d=>{
+      d.addEventListener('click', (e)=>{
+        const r = d.getBoundingClientRect();
+        const inDialog = (r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right);
+        if (!inDialog) d.close();
+      });
+    });
+  }
+
+  // ---------- Profile/trip bootstrap ----------
   async function ensureProfile(){
     let name = await idbGet('meta','userName');
     if (!name){
-      // first start
       name = prompt('Dein Name (global):', '') || '';
       name = name.trim();
-      if (!name){
-        name = 'Du';
-      }
+      if (!name) name = 'Du';
       await idbSet('meta','userName', name);
     }
     state.user.name = name;
@@ -1124,56 +1235,58 @@
       await idbSet('meta','deviceId', dev);
     }
     state.user.deviceId = dev;
+
+    $('profileDeviceId').textContent = dev;
   }
 
-  async function ensureTrip(){
-    // load active trip
-    let active = await idbGet('meta','activeTripId');
-
-    // Änderung: Kein Auto-Create mehr. Stattdessen Onboarding (Create/Join), wenn keine aktive Reise existiert.
-    if (!active){
-      state.activeTripId = null;
-      state.activeTrip = null;
-
-      // Load trips map (falls schon Reisen existieren)
-      const keys = await idbKeys('trips');
-      state.trips = new Map();
-      for (const k of keys){
-        const t = await idbGet('trips', k);
-        if (t) state.trips.set(k, t);
-      }
-      return;
-    }
-
-    state.activeTripId = active;
-
-    // Load trips map
+  async function loadTripsMap(){
     const keys = await idbKeys('trips');
     state.trips = new Map();
     for (const k of keys){
       const t = await idbGet('trips', k);
       if (t) state.trips.set(k, t);
     }
+  }
 
+  async function ensureTrip(){
+    await loadTripsMap();
+
+    const active = await idbGet('meta','activeTripId');
+    if (!active || !state.trips.get(active)){
+      state.activeTripId = null;
+      state.activeTrip = null;
+
+      if (!state.trips.size){
+        // first start -> onboarding
+        mOnboarding.showModal();
+      } else {
+        // let user pick
+        mTrips.showModal();
+      }
+      return;
+    }
+
+    state.activeTripId = active;
     state.activeTrip = state.trips.get(active);
 
-    // Ensure user is member
+    // ensure member exists
     if (state.activeTrip){
-      const hasMe = state.activeTrip.members.some(m => m.name === state.user.name);
+      const hasMe = state.activeTrip.members.some(m=>m.name === state.user.name);
       if (!hasMe){
         state.activeTrip.members.push({ id: randomId('m'), name: state.user.name });
         await idbSet('trips', state.activeTrip.id, state.activeTrip);
       }
 
       await startTripSync(state.activeTrip);
-      await subscribeTripDelete(state.activeTrip);
     }
   }
 
+  // ---------- UI data binding ----------
   function fillCcySelects(trip){
+    const list = [...new Set([...(trip.quickCurrencies||[]), trip.baseCurrency, ...COMMON_CCY].filter(Boolean))];
+
     const csel = $('ccy');
     csel.innerHTML = '';
-    const list = [...new Set([...trip.quickCurrencies, trip.baseCurrency, ...COMMON_CCY])];
     for (const c of list){
       const o = document.createElement('option');
       o.value = c; o.textContent = c;
@@ -1203,7 +1316,8 @@
     chips.innerHTML = '';
     for (const m of trip.members){
       const b = document.createElement('button');
-      b.className = 'tab';
+      b.type = 'button';
+      b.className = 'chip';
       b.textContent = m.name;
       b.dataset.mid = m.id;
       b.dataset.active = '1';
@@ -1212,188 +1326,76 @@
     }
   }
 
-  function setTab(tab){
-    // Defensive: never allow UI tab switching to crash init/render
-    if (!state.ui) state.ui = { tab: 'expenses' };
-    state.ui.tab = tab;
-
-    const isDash = tab === 'dashboard';
-    // "Screen" switching: same main, but dashboard section shows/hides
-    const dash = $('dashboard');
-    if (dash) dash.hidden = !isDash;
-
-    // Hide expense-related sections when on dashboard
-    document.querySelectorAll('[data-screen="expenses"]').forEach(el => el.hidden = isDash);
-
-    const tE = $('tabExpenses');
-    const tD = $('tabDashboard');
-    if (tE) tE.setAttribute('aria-current', isDash ? 'false' : 'page');
-    if (tD) tD.setAttribute('aria-current', isDash ? 'page' : 'false');
-
-    // button styling
-    if (tE) tE.className = 'btn ' + (isDash ? 'ghost' : 'secondary');
-    if (tD) tD.className = 'btn ' + (isDash ? 'secondary' : 'ghost');
-
-    // Keep scroll predictable
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }
-
-  async function renderDashboard(trip, expenses){
-    // Option A: only base currency entries count
-    const base = trip.baseCurrency;
-
-    const paid = new Map(trip.members.map(m=>[m.id,0]));
-    for (const ev of expenses){
-      if (ev.data.ccy !== base) continue;
-      paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + ev.data.amount);
+  async function renderExpenses(){
+    const trip = state.activeTrip;
+    if (!trip){
+      $('tripTitle').textContent = '—';
+      $('tripMeta').textContent = '—';
+      $('expenseCount').textContent = '0';
+      $('netNow').textContent = '—';
+      $('transferCount').textContent = '—';
+      $('settlement').textContent = '—';
+      $('expenses').innerHTML = '';
+      return;
     }
 
-    const total = [...paid.values()].reduce((a,b)=>a+b,0);
-    const totalRounded = Math.round(total*100)/100;
-
-    const bal = computeBalancesBase(expenses.filter(e=>e.data.ccy===base), trip);
-
-    const rows = trip.members.map(m => {
-      const amt = paid.get(m.id) || 0;
-      const pct = total > 0 ? (amt/total) : 0;
-      const net = bal.get(m.id) || 0;
-      return { id: m.id, name: m.name, amt, pct, net };
-    }).sort((a,b)=> (b.amt-a.amt) || a.name.localeCompare(b.name));
-
-    $('dashTotal').textContent = fmtMoney(totalRounded, base);
-
-    const maxPct = Math.max(0.00001, ...rows.map(r=>r.pct));
-
-    $('dashPeople').innerHTML = rows.map(r => {
-      const w = Math.round((r.pct / maxPct) * 100);
-      const pctLabel = Math.round(r.pct*100);
-      const netSign = r.net >= 0 ? '+' : '−';
-      const netAbs = Math.abs(Math.round(r.net*100)/100);
-      const netColor = r.net >= 0 ? 'rgba(18,255,241,.92)' : 'rgba(255,18,150,.92)';
-
-      return `
-        <div class="pill" style="margin:10px 0;gap:12px;align-items:flex-start">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
-              <b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(r.name)}</b>
-              <span class="money">${escapeHtml(fmtMoney(Math.round(r.amt*100)/100, base))}</span>
-            </div>
-            <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:10px">
-              <div style="height:100%;width:${w}%;background:linear-gradient(90deg, rgba(18,150,255,.95), rgba(18,255,241,.92))"></div>
-            </div>
-            <div class="small muted" style="margin-top:8px;display:flex;justify-content:space-between;gap:10px">
-              <span>${pctLabel}% vom Total</span>
-              <span style="color:${netColor};font-weight:800">Netto: ${netSign}${escapeHtml(fmtMoney(netAbs, base))}</span>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('') || '<div class="small muted">Noch keine Ausgaben in Basiswährung.</div>';
-  }
-
-  async function render(){
-    const trip = state.activeTrip;
-    if (!trip) return;
-
-    $('userName').textContent = state.user.name;
-    $('deviceId').textContent = state.user.deviceId;
-
     $('tripTitle').textContent = trip.title;
-    const activeInline = $('activeTripInline');
-    if (activeInline) activeInline.textContent = trip.title;
-
-    // Dashboard bottom: ledger hash (unscheinbar)
-    const ledgerSmall = $('dashLedger');
-    if (ledgerSmall) ledgerSmall.textContent = ledgerFingerprint(events);
+    $('tripMeta').innerHTML = `Basiswährung <span class="kbd">${escapeHtml(trip.baseCurrency)}</span> · Owner <span class="kbd">${escapeHtml(trip.ownerDeviceId || '—')}</span>`;
 
     fillCcySelects(trip);
     fillPeople(trip);
 
-    // owner-only delete button
-    const delBtn = $('btnDeleteTripAll');
-    const delHint = $('deleteTripHint');
-    const owner = isTripOwner(trip);
-    if (delBtn) delBtn.hidden = !owner;
-    if (delHint) delHint.hidden = owner;
-
     const events = await loadTripEvents(trip.id);
     const expenses = applyEvents(events);
 
-    $('expenseCount').textContent = `${expenses.length}`;
-    $('ledgerHash').textContent = ledgerFingerprint(events);
+    $('expenseCount').textContent = String(expenses.length);
 
-    // Total (display): sum in original currencies is not meaningful.
-    // MVP: show sum of base-currency entries only, and count non-base.
-    let totalBase = 0;
-    let nonBase = 0;
-    for (const ev of expenses){
-      if (ev.data.ccy === trip.baseCurrency) totalBase += ev.data.amount;
-      else nonBase++;
-    }
-    $('totalSpent').textContent = `${fmtMoney(Math.round(totalBase*100)/100, trip.baseCurrency)}${nonBase? ` + ${nonBase} FX` : ''}`;
-
-    // Ranking (who paid most) - in base currency only for MVP.
-    const paid = new Map(trip.members.map(m=>[m.id,0]));
-    for (const ev of expenses){
-      const amt = (ev.data.ccy === trip.baseCurrency) ? ev.data.amount : 0;
-      paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + amt);
-    }
-    const ranking = [...paid.entries()].map(([id,amt])=>({id,amt})).sort((a,b)=>b.amt-a.amt);
-    const top = ranking[0];
-    $('topPayer').textContent = top ? `${memberName(trip, top.id)} · ${fmtMoney(top.amt, trip.baseCurrency)}` : '—';
-
-    // Settlement preview
-    const bal = computeBalancesBase(expenses.filter(e=>e.data.ccy===trip.baseCurrency), trip);
-    const myId = trip.members.find(m=>m.name===state.user.name)?.id;
-    const myBal = bal.get(myId) || 0;
-    $('netNow').textContent = (myBal>=0?'+':'') + fmtMoney(Math.abs(myBal), trip.baseCurrency).replace(/[\u00A0 ]?([A-Z]{3})$/, ' $1');
-
-    const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
-    if (!transfers.length){
-      $('settlement').innerHTML = '<span class="muted">Keine Transfers nötig (für Base‑Währung).</span>';
-    } else {
-      $('settlement').innerHTML = transfers.map(t=>{
-        return `<div style="display:flex;gap:10px;justify-content:space-between;align-items:baseline;margin:10px 0">
-          <div><b>${escapeHtml(memberName(trip, t.from))}</b> → <b>${escapeHtml(memberName(trip, t.to))}</b></div>
-          <div class="money">${escapeHtml(fmtMoney(t.amount, trip.baseCurrency))}</div>
-        </div>`;
-      }).join('');
-    }
-
-    // Ranking UI
-    $('ranking').innerHTML = ranking.map((r,idx)=>{
-      const max = ranking[0]?.amt || 1;
-      const bar = Math.min(100, Math.round((r.amt/max)*100));
-      return `
-        <div style="display:flex;align-items:center;gap:10px;margin:10px 0">
-          <span class="kbd" style="min-width:34px;text-align:center">${idx+1}</span>
-          <div style="flex:1">
-            <div style="display:flex;justify-content:space-between;gap:10px">
-              <b>${escapeHtml(memberName(trip, r.id))}</b>
-              <span class="money">${escapeHtml(fmtMoney(r.amt, trip.baseCurrency))}</span>
-            </div>
-            <div style="height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:8px">
-              <div style="height:100%;width:${bar}%;background:linear-gradient(90deg, rgba(18,150,255,.95), rgba(18,255,241,.92))"></div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('') || '—';
-
-    // Expense list
+    // Table
     const tbody = $('expenses');
     tbody.innerHTML = '';
     for (const ev of expenses){
-      const tr = document.createElement('tr');
       const dt = new Date(ev.t);
-      const participants = (ev.data.participantMemberIds||[]).map(id=>memberName(trip,id)).join(', ');
+      const participantsArr = (ev.data.participantMemberIds || []).map(id=>memberName(trip,id));
+      const participants = participantsArr.join(', ');
+
+      const tr = document.createElement('tr');
+      tr.tabIndex = 0;
+      tr.setAttribute('role','button');
+      tr.setAttribute('aria-label', `Details: ${ev.data.what || 'Ausgabe'} – ${fmtMoney(ev.data.amount, ev.data.ccy)}`);
+
+      const whenShort = dt.toLocaleDateString(undefined, { year:'2-digit', month:'2-digit', day:'2-digit' });
+      const forShort = participantsArr.length ? (participantsArr[0] + (participantsArr.length>1 ? ` +${participantsArr.length-1}` : '')) : '—';
+
       tr.innerHTML = `
-        <td class="small">${escapeHtml(dt.toLocaleString())}</td>
-        <td><b>${escapeHtml(ev.data.what||'(ohne Titel)')}</b><div class="small muted">Bezahlt für: ${escapeHtml(participants)}</div></td>
-        <td>${escapeHtml(memberName(trip, ev.data.payerMemberId))}</td>
+        <td><b>${escapeHtml(ev.data.what || '(ohne Titel)')}</b><div class="small muted">${escapeHtml(whenShort)}</div></td>
+        <td class="small">${escapeHtml(memberName(trip, ev.data.payerMemberId))}</td>
+        <td class="small muted">${escapeHtml(forShort)}</td>
         <td class="money">${escapeHtml(fmtMoney(ev.data.amount, ev.data.ccy))}</td>
-        <td style="text-align:right"><button class="btn danger small" data-void="${escapeHtml(ev.data.expenseId)}">Void</button></td>
+        <td style="text-align:right"><button class="btn danger small" data-void="${escapeHtml(ev.data.expenseId)}" aria-label="Void">Void</button></td>
       `;
+
+      const openDetails = () => {
+        $('expDetTitle').textContent = ev.data.what || '(ohne Titel)';
+        $('expDetWhen').textContent = dt.toLocaleString();
+        $('expDetAmount').textContent = fmtMoney(ev.data.amount, ev.data.ccy);
+        $('expDetPayer').textContent = memberName(trip, ev.data.payerMemberId);
+        $('expDetFor').textContent = participants || '—';
+        mExpenseDetails.showModal();
+      };
+
+      tr.addEventListener('click', (e)=>{
+        // clicking the Void button should not open the details modal
+        if (e.target && e.target.closest && e.target.closest('button[data-void]')) return;
+        openDetails();
+      });
+
+      tr.addEventListener('keydown', (e)=>{
+        if (e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          openDetails();
+        }
+      });
+
       tbody.appendChild(tr);
     }
 
@@ -1406,47 +1408,110 @@
       });
     });
 
-    await renderDashboard(trip, expenses);
-
-    // Sync status label detail
     if (state.lastSyncAt){
       const s = new Date(state.lastSyncAt).toLocaleTimeString();
       $('syncLabel').textContent = `Sync aktiv · zuletzt ${s}`;
     }
-
-    // keep current tab consistent
-    setTab(state.ui.tab || 'expenses');
   }
 
-  // ---------- Modals ----------
-  function wireModal(id){
-    const d = $(id);
-    d.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click', ()=>d.close()));
-    return d;
+  async function renderDashboard(){
+    const trip = state.activeTrip;
+    if (!trip){
+      $('dashBase').textContent = '—';
+      $('dashTotal').textContent = '—';
+      $('ranking').textContent = '—';
+      $('dashNote').textContent = '—';
+      $('netNow').textContent = '—';
+      $('transferCount').textContent = '0';
+      $('settlement').textContent = '—';
+      return;
+    }
+
+    $('dashBase').textContent = trip.baseCurrency;
+
+    const events = await loadTripEvents(trip.id);
+    const expenses = applyEvents(events);
+
+    // Option A
+    let totalBase = 0;
+    let nonBase = 0;
+    const paid = new Map(trip.members.map(m=>[m.id,0]));
+    for (const ev of expenses){
+      if (ev.data.ccy === trip.baseCurrency){
+        const amt = Number(ev.data.amount) || 0;
+        totalBase += amt;
+        paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + amt);
+      } else {
+        nonBase++;
+      }
+    }
+    totalBase = Math.round(totalBase*100)/100;
+
+    $('dashTotal').textContent = fmtMoney(totalBase, trip.baseCurrency);
+    $('dashNote').textContent = nonBase ? `+ ${nonBase} FX ignoriert` : 'nur Base‑Währung';
+
+    // Settlement preview (Base only) moved to Dashboard
+    const baseOnly = expenses.filter(e => e.data.ccy === trip.baseCurrency);
+    const bal = computeBalancesBase(baseOnly, trip);
+
+    const myId = trip.members.find(m=>m.name===state.user.name)?.id;
+    const myBal = bal.get(myId) || 0;
+    $('netNow').textContent = (myBal >= 0 ? '+' : '-') + fmtMoney(Math.abs(myBal), trip.baseCurrency);
+
+    const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
+    $('transferCount').textContent = String(transfers.length);
+
+    if (!transfers.length){
+      $('settlement').innerHTML = '<span class="muted">Keine Transfers nötig (für Base‑Währung).</span>';
+    } else {
+      $('settlement').innerHTML = transfers.map(t=>{
+        return `<div class="pill" style="margin:10px 0"><div><b>${escapeHtml(memberName(trip, t.from))}</b> → <b>${escapeHtml(memberName(trip, t.to))}</b></div><div class="money">${escapeHtml(fmtMoney(t.amount, trip.baseCurrency))}</div></div>`;
+      }).join('');
+    }
+
+    const ranking = [...paid.entries()].map(([id,amt])=>({id,amt})).sort((a,b)=>b.amt-a.amt);
+    const max = ranking[0]?.amt || 1;
+
+    $('ranking').innerHTML = ranking.map((r, idx)=>{
+      const pct = Math.max(0, Math.min(100, Math.round((r.amt / max) * 100)));
+      return `
+        <div style="margin: 12px 0">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+            <div><span class="kbd">${idx+1}</span> <b style="margin-left:8px">${escapeHtml(memberName(trip, r.id))}</b></div>
+            <div class="money">${escapeHtml(fmtMoney(r.amt, trip.baseCurrency))}</div>
+          </div>
+          <div class="barwrap"><div class="barfill" style="width:${pct}%"></div></div>
+        </div>
+      `;
+    }).join('') || '<span class="muted">—</span>';
   }
-  const mProfile = wireModal('modalProfile');
-  const mInvite = wireModal('modalInvite');
-  const mJoin = wireModal('modalJoin');
-  const mTrips = wireModal('modalTrips');
-  const mSettle = wireModal('modalSettle');
-  const mOnboarding = wireModal('modalOnboarding');
-  const mCurrency = wireModal('modalCurrencyPicker');
-  const mCurrency = wireModal('modalCurrencyPicker');
+
+  async function renderAll(){
+    // Keep UI consistent even if render fails
+    try {
+      await renderExpenses();
+      await renderDashboard();
+    } catch (e){
+      toast('Render-Fehler.');
+    }
+  }
 
   // ---------- Actions ----------
   async function addExpense(){
     const trip = state.activeTrip;
+    if (!trip){ toast('Keine aktive Reise.'); return; }
+
     const amount = parseFloat(($('amount').value||'').replace(',','.'));
     const ccy = $('ccy').value;
-    const what = $('what').value.trim();
+    const what = ($('what').value||'').trim();
     const payer = $('payer').value;
-    const participants = Array.from($('participants').querySelectorAll('.tab'))
+    const participants = Array.from($('participants').querySelectorAll('.chip'))
       .filter(b=>b.dataset.active==='1')
       .map(b=>b.dataset.mid);
 
     if (!Number.isFinite(amount) || amount <= 0){ toast('Bitte einen gültigen Betrag eingeben.'); return; }
     if (!what){ toast('Bitte "Wofür" ausfüllen.'); return; }
-    if (!participants.length){ toast('Mindestens eine teilnehmende Person auswählen.'); return; }
+    if (!participants.length){ toast('Mindestens eine Person auswählen.'); return; }
 
     const expenseId = randomId('x');
     const ev = {
@@ -1472,29 +1537,41 @@
   }
 
   async function openProfile(){
-    const u = $('profileUserName');
-    const d = $('profileDeviceId');
-    if (u) u.textContent = state.user.name || '—';
-    if (d) d.textContent = state.user.deviceId || '—';
+    $('profileName').value = state.user.name || '';
+    $('profileDeviceId').textContent = state.user.deviceId || '—';
     mProfile.showModal();
+  }
+
+  async function saveProfile(){
+    const name = ($('profileName').value||'').trim();
+    if (!name){ toast('Name darf nicht leer sein.'); return; }
+    state.user.name = name;
+    await idbSet('meta','userName', name);
+    mProfile.close();
+    toast('Profil gespeichert.');
+    renderAll();
   }
 
   async function openInvite(){
     const trip = state.activeTrip;
+    if (!trip){ toast('Keine aktive Reise.'); return; }
+
     const pass = await idbGet('meta', `tripPass:${trip.id}`);
-    // invite contains: tripId, relayTopic, keySalt, passphrase
+
     const payload = {
-      v: 1,
+      v: 2,
       tripId: trip.id,
-      relayTopic: trip.relayTopic,
-      keySaltB64: trip.keySaltB64,
-      pass,
       title: trip.title,
       baseCurrency: trip.baseCurrency,
       quickCurrencies: trip.quickCurrencies,
       members: trip.members,
-      ownerDeviceId: trip.ownerDeviceId || null
+      relayTopic: trip.relayTopic,
+      ownerDeviceId: trip.ownerDeviceId,
+      keySaltB64: trip.keySaltB64,
+      pass
     };
+
+    // NOTE: For MVP the invite is base64 JSON. In a later iteration we can encrypt this payload too.
     const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     $('inviteCode').value = code;
     mInvite.showModal();
@@ -1511,17 +1588,22 @@
   }
 
   async function refreshInvite(){
-    // new passphrase + topic
     const trip = state.activeTrip;
+    if (!trip){ toast('Keine aktive Reise.'); return; }
+
     trip.relayTopic = randomId('topic');
+
     const pass = randomId('key').slice(0, 22);
     const salt = crypto.getRandomValues(new Uint8Array(16));
     trip.keySaltB64 = b64(salt);
+
     await idbSet('trips', trip.id, trip);
     await idbSet('meta', `tripPass:${trip.id}`, pass);
+
     toast('Invite erneuert.');
-    await openInvite();
     await startTripSync(trip);
+    await openInvite();
+    renderAll();
   }
 
   async function openJoin(){
@@ -1532,57 +1614,61 @@
   async function doJoin(){
     const code = ($('joinCode').value||'').trim();
     if (!code){ toast('Bitte Invite‑Code einfügen.'); return; }
+
     try {
       const payload = JSON.parse(decodeURIComponent(escape(atob(code))));
-      if (!payload || payload.v !== 1) throw new Error('bad');
+      if (!payload || (payload.v !== 2 && payload.v !== 1)) throw new Error('bad');
 
       const trip = {
         id: payload.tripId,
         title: payload.title || 'Reise',
         baseCurrency: payload.baseCurrency || 'EUR',
         quickCurrencies: payload.quickCurrencies || ['EUR','USD','GBP','CHF'],
-        members: payload.members || [{id: randomId('m'), name: state.user.name}],
+        members: payload.members || [{ id: randomId('m'), name: state.user.name }],
         relayTopic: payload.relayTopic,
-        keySaltB64: payload.keySaltB64,
-        ownerDeviceId: payload.ownerDeviceId || null
+        ownerDeviceId: payload.ownerDeviceId || null,
+        keySaltB64: payload.keySaltB64
       };
 
       await idbSet('trips', trip.id, trip);
       await idbSet('meta','activeTripId', trip.id);
       await idbSet('meta', `tripPass:${trip.id}`, payload.pass);
 
-      state.activeTripId = trip.id;
       state.trips.set(trip.id, trip);
+      state.activeTripId = trip.id;
       state.activeTrip = trip;
 
       mJoin.close();
       toast('Reise beigetreten.');
-      await startTripSync(trip);
-      setTab('expenses');
-      render();
 
-    } catch (e){
+      await startTripSync(trip);
+      renderAll();
+    } catch {
       toast('Invite‑Code ungültig.');
     }
   }
 
   async function openTrips(){
+    await loadTripsMap();
+
     const keys = [...state.trips.keys()];
-    if (!keys.length){ $('tripList').innerHTML = '<div class="small muted">Keine Reisen.</div>'; }
-    else {
+    if (!keys.length){
+      $('tripList').innerHTML = '<div class="small muted">Keine Reisen.</div>';
+    } else {
       $('tripList').innerHTML = keys.map(k=>{
         const t = state.trips.get(k);
         const active = (k === state.activeTripId);
-        const canDelete = (t.ownerDeviceId && t.ownerDeviceId === state.user.deviceId);
+        const ownerBadge = t.ownerDeviceId ? `<span class="kbd">Owner ${escapeHtml(t.ownerDeviceId)}</span>` : `<span class="kbd">Owner —</span>`;
+        const del = isTripOwner(t) ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : '';
         return `
-          <div class="pill" style="margin:10px 0;align-items:flex-start">
+          <div class="pill" style="margin:10px 0; align-items:flex-start">
             <div style="min-width:0">
-              <b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(t.title)}</b>
-              <div class="small muted">Basis: ${escapeHtml(t.baseCurrency)} · Mitglieder: ${t.members.length}</div>
+              <b>${escapeHtml(t.title)}</b>
+              <div class="small muted" style="margin-top:6px">Basis: ${escapeHtml(t.baseCurrency)} · Mitglieder: ${t.members.length} · ${ownerBadge}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
               <button class="btn ${active?'secondary':'ghost'} small" data-trip="${escapeHtml(t.id)}">${active?'Aktiv':'Aktivieren'}</button>
-              ${canDelete ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : ''}
+              ${del}
             </div>
           </div>
         `;
@@ -1594,41 +1680,37 @@
         const id = b.getAttribute('data-trip');
         await idbSet('meta','activeTripId', id);
         state.activeTripId = id;
+        await loadTripsMap();
         state.activeTrip = state.trips.get(id);
         toast('Aktive Reise gewechselt.');
         mTrips.close();
         await startTripSync(state.activeTrip);
-        render();
+        renderAll();
       });
     });
 
     $('tripList').querySelectorAll('button[data-del]').forEach(b=>{
       b.addEventListener('click', async ()=>{
         const id = b.getAttribute('data-del');
+        await loadTripsMap();
         const t = state.trips.get(id);
         if (!t) return;
-        if (!t.ownerDeviceId || t.ownerDeviceId !== state.user.deviceId){
+
+        if (!isTripOwner(t)){
           toast('Nur der Owner kann löschen.');
           return;
         }
+
         const ok = confirm('Reise für alle löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.');
         if (!ok) return;
 
-        // If currently active, ensure we have the right key loaded
-        if (!state.tripKey || state.activeTrip?.id !== t.id){
-          // derive key for that trip
-          const pass = await idbGet('meta', `tripPass:${t.id}`);
-          if (!pass){ toast('Kein Schlüssel für diese Reise vorhanden.'); return; }
-          const salt = unb64(t.keySaltB64);
-          state.tripKey = await pbkdf2Key(pass, salt);
-        }
-
         await publishTripDelete(t);
         await hardDeleteTripLocal(t.id);
+
         toast('Reise gelöscht.');
         mTrips.close();
-        mOnboarding.showModal();
-        render();
+        await ensureTrip();
+        renderAll();
       });
     });
 
@@ -1639,7 +1721,6 @@
     const title = prompt('Name der Reise:', 'Reise') || '';
     const t = defaultTrip();
     t.title = title.trim() || 'Reise';
-    t.ownerDeviceId = state.user.deviceId;
 
     const base = prompt('Basiswährung (z.B. EUR):', 'EUR') || 'EUR';
     t.baseCurrency = base.trim().toUpperCase() || 'EUR';
@@ -1648,6 +1729,7 @@
     t.quickCurrencies = quick.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
     if (!t.quickCurrencies.includes(t.baseCurrency)) t.quickCurrencies.unshift(t.baseCurrency);
 
+    // passphrase + salt
     const pass = randomId('key').slice(0, 22);
     const salt = crypto.getRandomValues(new Uint8Array(16));
     t.keySaltB64 = b64(salt);
@@ -1662,265 +1744,130 @@
 
     toast('Neue Reise erstellt.');
     mTrips.close();
+
     await startTripSync(t);
-    render();
+    renderAll();
   }
 
   async function openSettle(){
-    // default settlement ccy = trip base
-    $('settleCcy').value = state.activeTrip.baseCurrency || 'EUR';
+    const trip = state.activeTrip;
+    if (!trip){ toast('Keine aktive Reise.'); return; }
+
+    $('settleCcy').value = trip.baseCurrency || 'EUR';
     $('ecbStatus').textContent = '—';
+    $('manualFx').hidden = true;
     mSettle.showModal();
   }
 
-  async function fetchEcb(){
-    $('ecbStatus').textContent = 'Hole ECB…';
-    $('manualFx').hidden = true;
+  // ---------- Service worker ----------
+  async function initSW(){
+    if (!('serviceWorker' in navigator)) return;
+
+    // Bump query param on every release to help iOS notice.
+    const swUrl = './sw.js?v=2';
 
     try {
-      const daily = await fetchEcbDaily();
-      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-      await idbSet('meta','lastEcbDate', daily.date);
-      $('ecbStatus').textContent = `ECB OK · ${daily.date} · ${Object.keys(daily.rates).length} Währungen`;
-      toast('ECB Kurs geladen.');
+      const reg = await navigator.serviceWorker.register(swUrl);
+      try { reg.update(); } catch {}
 
-    } catch (e){
-      const lastDate = await idbGet('meta','lastEcbDate');
-      if (lastDate){
-        $('ecbStatus').textContent = `Offline/Fallback · letzter Kurs: ${lastDate}`;
-        toast('ECB nicht erreichbar — Fallback verfügbar.');
-        $('manualFx').hidden = true;
-      } else {
-        $('ecbStatus').textContent = 'ECB nicht erreichbar und kein gespeicherter Kurs vorhanden.';
-        toast('Bitte Kurs manuell eingeben.');
+      if (reg.waiting) showUpdateBanner(reg.waiting);
 
-        // Show manual FX input
-        const trip = state.activeTrip;
-        const settle = $('settleCcy').value || (trip?.baseCurrency || 'EUR');
-        $('manualFx').hidden = false;
-        $('manualFxCcy').value = settle;
-        $('manualFxRate').value = '';
-      }
-    }
-  }
-
-  async function saveManualFx(){
-    const trip = state.activeTrip;
-    if (!trip) return;
-
-    const ccy = ($('manualFxCcy').value || '').trim().toUpperCase();
-    const rate = parseFloat(($('manualFxRate').value || '').replace(',','.'));
-
-    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
-    if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
-
-    const date = new Date().toISOString().slice(0,10);
-    const daily = {
-      date,
-      source: 'manual',
-      rates: { EUR: 1, [ccy]: rate }
-    };
-
-    await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-    await idbSet('meta','lastEcbDate', daily.date);
-
-    $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
-    $('manualFx').hidden = true;
-    toast('Manueller Kurs gespeichert.');
-  }
-
-  async function finalizeSnapshot(){
-    const trip = state.activeTrip;
-    const settleCcy = $('settleCcy').value;
-
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){
-      toast('Bitte zuerst ECB Kurs holen oder manuell speichern.');
-      return;
-    }
-
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (!daily){ toast('Kursdaten fehlen.'); return; }
-
-    // If manual rates exist but do not include the settlement currency, warn.
-    if (daily.source === 'manual' && settleCcy !== 'EUR' && !daily.rates?.[settleCcy]){
-      toast(`Manueller Kurs fehlt für ${settleCcy}.`);
-      $('manualFx').hidden = false;
-      $('manualFxCcy').value = settleCcy;
-      return;
-    }
-
-    const snapshot = {
-      id: randomId('snap'),
-      tripId: trip.id,
-      t: Date.now(),
-      baseCurrency: trip.baseCurrency,
-      settleCurrency: settleCcy,
-      fxDate: daily.date,
-      fxSource: daily.source || 'ECB',
-      rates: daily.rates
-    };
-
-    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
-    $('ecbStatus').textContent = `Snapshot gespeichert · ${snapshot.fxDate} · Quelle: ${snapshot.fxSource} · Ziel: ${snapshot.settleCurrency}`;
-    toast('Snapshot gespeichert.');
-  }
-
-
-  // ---------- Wiring ----------
-  async function init(){
-    // Make the app visible as early as possible; we can show onboarding/errors inside.
-    try { $('app').hidden = false; } catch {}
-    try { $('bottomBar').hidden = false; } catch {}
-
-    // Fail-safe: if init crashes, still show something (otherwise only header is visible)
-    try {
-
-    // SW
-    if ('serviceWorker' in navigator){
-      // Bump the query string on every release to help iOS/Safari notice updates.
-      const swUrl = './sw.js?v=8';
-      navigator.serviceWorker.register(swUrl).then((reg) => {
-        // Aggressiver Update-Check bei jedem Start
-        try { reg.update(); } catch {}
-
-        // If there's already a waiting SW, show update UI immediately.
-        if (reg.waiting) showUpdateBanner(reg.waiting);
-
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener('statechange', () => {
-            // When the new SW is installed and we already have a controller,
-            // it means an update is available.
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateBanner(newWorker);
-            }
-          });
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller){
+            showUpdateBanner(nw);
+          }
         });
-      }).catch(()=>{});
+      });
 
-      // When the new SW takes control, reload once.
       let reloading = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (reloading) return;
         reloading = true;
         window.location.reload();
       });
-
-      // Optional: receive SW status messages
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        const msg = event.data;
-        if (msg && msg.type === 'SW_ACTIVATED') {
-          // Could update UI if desired
-        }
-      });
+    } catch {
+      // ignore
     }
+  }
 
-    await ensureProfile();
-    await ensureTrip();
+  // ---------- Wiring ----------
+  function wireUI(){
+    $('tabExpenses').addEventListener('click', ()=>setTab('expenses'));
+    $('tabDashboard').addEventListener('click', ()=>setTab('dashboard'));
 
-    // show app
-    $('app').hidden = false;
-    $('bottomBar').hidden = false;
+    $('btnTripsHeader').addEventListener('click', openTrips);
+    $('btnProfile').addEventListener('click', openProfile);
+    $('btnSaveProfile').addEventListener('click', saveProfile);
 
-    // default tab
-    setTab('expenses');
+    $('btnAddExpense').addEventListener('click', addExpense);
 
-    // Tabs
-    const tabE = $('tabExpenses');
-    const tabD = $('tabDashboard');
-    if (tabE) tabE.addEventListener('click', ()=>setTab('expenses'));
-    if (tabD) tabD.addEventListener('click', ()=>setTab('dashboard'));
+    $('btnInvite').addEventListener('click', openInvite);
+    $('btnJoin').addEventListener('click', openJoin);
 
-    // Buttons
-    const btnProfile = $('btnProfile');
-    if (btnProfile) btnProfile.addEventListener('click', openProfile);
+    const go = $('btnGoActions');
+    if (go) go.addEventListener('click', ()=>{
+      setTab('expenses');
+      setTimeout(()=>{ try { $('actionsCard').scrollIntoView({behavior:'smooth', block:'start'}); } catch {} }, 40);
+    });
+    $('btnDoJoin').addEventListener('click', doJoin);
 
-    // Actions
-    const addBtn = $('btnAddExpense');
-    if (addBtn) addBtn.addEventListener('click', addExpense);
+    $('btnCopyInvite').addEventListener('click', copyInvite);
+    $('btnRefreshInvite').addEventListener('click', refreshInvite);
 
-    // Onboarding
-    const btnOnboardCreate = $('btnOnboardCreate');
-    const btnOnboardJoin = $('btnOnboardJoin');
-    if (btnOnboardCreate) btnOnboardCreate.addEventListener('click', async ()=>{
+    $('btnNewTrip').addEventListener('click', newTrip);
+
+    $('btnFetchEcb').addEventListener('click', fetchEcb);
+    $('btnFinalize').addEventListener('click', finalizeSnapshot);
+    $('btnSaveManualFx').addEventListener('click', saveManualFx);
+
+    $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
       await newTrip();
       setTab('expenses');
     });
-    if (btnOnboardJoin) btnOnboardJoin.addEventListener('click', ()=>{
+    $('btnOnboardJoin').addEventListener('click', ()=>{
       mOnboarding.close();
       openJoin();
     });
 
-    // Invite/Join/Trips
-    const btnInvite = $('btnInvite');
-    const btnJoin = $('btnJoin');
-    const btnDoJoin = $('btnDoJoin');
-    if (btnInvite) btnInvite.addEventListener('click', async ()=>{ await openInvite(); });
-    if (btnJoin) btnJoin.addEventListener('click', openJoin);
-    if (btnDoJoin) btnDoJoin.addEventListener('click', doJoin);
+    wireBackdropClose();
 
-    const btnCopyInvite = $('btnCopyInvite');
-    const btnRefreshInvite = $('btnRefreshInvite');
-    if (btnCopyInvite) btnCopyInvite.addEventListener('click', copyInvite);
-    if (btnRefreshInvite) btnRefreshInvite.addEventListener('click', refreshInvite);
+    window.addEventListener('online', ()=>setSyncState('paused', 'Online'));
+    window.addEventListener('offline', ()=>setSyncState('offline', 'Offline'));
+  }
 
-    // Reisen (im Header)
-    const btnTripsHeader = $('btnTripsHeader');
-    const btnNewTrip = $('btnNewTrip');
-    if (btnTripsHeader) btnTripsHeader.addEventListener('click', openTrips);
-    if (btnNewTrip) btnNewTrip.addEventListener('click', newTrip);
+  async function init(){
+    // Set baseline UI state synchronously
+    setTab('expenses');
 
-    const btnSettle = $('btnSettle');
-    const btnFetchEcb = $('btnFetchEcb');
-    const btnSaveManualFx = $('btnSaveManualFx');
-    const btnFinalize = $('btnFinalize');
-    if (btnSettle) btnSettle.addEventListener('click', openSettle);
-    if (btnFetchEcb) btnFetchEcb.addEventListener('click', fetchEcb);
-    if (btnSaveManualFx) btnSaveManualFx.addEventListener('click', saveManualFx);
-    if (btnFinalize) btnFinalize.addEventListener('click', finalizeSnapshot);
+    await initSW();
 
-    // If no active trip, show onboarding
-    if (!state.activeTripId) {
-      mOnboarding.showModal();
-    }
+    await ensureProfile();
+    await ensureTrip();
 
-    // Online/offline indicator
-    const setOnline = () => {
-      $('syncDot').style.background = 'var(--cyan)';
-      $('syncLabel').textContent = state.gun ? 'Sync aktiv (Relay)' : 'Online (ohne Relay)';
-    };
-    const setOffline = () => {
-      $('syncDot').style.background = 'rgba(255,255,255,.25)';
-      $('syncLabel').textContent = 'Offline';
-    };
-    window.addEventListener('online', setOnline);
-    window.addEventListener('offline', setOffline);
-    navigator.onLine ? setOnline() : setOffline();
+    wireUI();
 
-    // close dialogs on backdrop clicki
-    document.querySelectorAll('dialog').forEach(d=>{
-      d.addEventListener('click', (e)=>{
-        const r = d.getBoundingClientRect();
-        const inDialog = (r.top <= e.clientY && e.clientY <= r.bottom && r.left <= e.clientX && e.clientX <= r.right);
-        if (!inDialog) d.close();
-      });
-    });
+    // If we now have a trip, render.
+    renderAll();
 
-    render();
+    // Sync label baseline
+    if (!state.gun) setSyncState(navigator.onLine ? 'paused' : 'offline', navigator.onLine ? 'Online (ohne Relay)' : 'Offline');
 
-    } catch (e){
-      console.error('Init failed', e);
-      // Make sure the app container is visible so we don't end up with a blank screen.
-      try { $('app').hidden = false; } catch {}
-      try { $('bottomBar').hidden = false; } catch {}
-      try { toast('Fehler beim Start — bitte Konsole prüfen.'); } catch {}
+    // If no trip is active, ensure modals are shown
+    if (!state.activeTrip){
+      if (!state.trips.size) mOnboarding.showModal();
     }
   }
 
+  // Global error trap -> toast (helps iOS PWA)
+  window.addEventListener('error', (e)=>{ try { toast('JS-Fehler: ' + (e.message || 'unknown')); } catch {} });
+  window.addEventListener('unhandledrejection', (e)=>{ try { toast('Promise-Fehler'); } catch {} });
+
   init();
+})();
 </script>
 </body>
 </html>
