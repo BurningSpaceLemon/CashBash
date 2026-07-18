@@ -1900,7 +1900,7 @@
     window.addEventListener('offline', setOffline);
     navigator.onLine ? setOnline() : setOffline();
 
-    // close dialogs on backdrop click
+    // close dialogs on backdrop clicki
     document.querySelectorAll('dialog').forEach(d=>{
       d.addEventListener('click', (e)=>{
         const r = d.getBoundingClientRect();
