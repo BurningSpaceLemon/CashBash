@@ -503,7 +503,7 @@
     <div class="row2" style="margin-top:12px">
       <div>
         <label for="settingsFxCcy">Währung</label>
-        <input id="settingsFxCcy" placeholder="z.B. USD" />
+        <select id="settingsFxCcy"></select>
       </div>
       <div>
         <label for="settingsFxRate">Kurs</label>
@@ -793,15 +793,56 @@
       const st = tx.objectStore(store);
       const req = st.put(val, key);
       req.onsuccess = ()=>resolve(true);
-      req.onerror = ()=>{
-        try { toast('Speichern fehlgeschlagen (IndexedDB).'); } catch {}
-        reject(req.error);
-      };
-      tx.onabort = ()=>{
-        try { toast('Speichern abgebrochen (IndexedDB).'); } catch {}
-        reject(tx.error || new Error('tx abort'));
-      };
+      req.onerror = ()=>reject(req.error);
+      tx.onabort = ()=>reject(tx.error || new Error('tx abort'));
     });
+  }
+
+  // ---------- Persistent KV fallback (iOS PWA) ----------
+  // Some iOS PWA setups can behave strangely with IndexedDB writes (silent aborts).
+  // We keep a small manual-FX cache in Cache Storage as a robust fallback.
+  const MANUAL_FX_CACHE = 'cashbash-manual-fx-v1';
+
+  async function kvSet(key, obj){
+    try {
+      await idbSet('fx', key, obj);
+      return 'idb';
+    } catch (e){
+      try {
+        const cache = await caches.open(MANUAL_FX_CACHE);
+        const req = new Request('https://local.kv/' + encodeURIComponent(key));
+        const res = new Response(JSON.stringify(obj), { headers: { 'Content-Type': 'application/json' } });
+        await cache.put(req, res);
+        return 'cache';
+      } catch (e2){
+        throw e;
+      }
+    }
+  }
+
+  async function kvGet(key){
+    try {
+      const v = await idbGet('fx', key);
+      if (v !== undefined) return v;
+    } catch {}
+    try {
+      const cache = await caches.open(MANUAL_FX_CACHE);
+      const req = new Request('https://local.kv/' + encodeURIComponent(key));
+      const res = await cache.match(req);
+      if (!res) return undefined;
+      return await res.json();
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function kvDel(key){
+    try { await idbDel('fx', key); } catch {}
+    try {
+      const cache = await caches.open(MANUAL_FX_CACHE);
+      const req = new Request('https://local.kv/' + encodeURIComponent(key));
+      await cache.delete(req);
+    } catch {}
   }
 
   async function idbDel(store, key){
@@ -1149,25 +1190,36 @@
     if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
     if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
 
-    // Persist global manual rate (device-wide)
-    await idbSet('fx', `manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
+    let where = 'idb';
+    try {
+      where = await kvSet(`manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
+    } catch (e){
+      toast('Speichern nicht möglich.');
+      console.error(e);
+      return;
+    }
 
     // Also write/merge a daily record for today so conversion has a concrete fxDate.
     const date = new Date().toISOString().slice(0,10);
-    const existing = await idbGet('fx', `ecbDaily:${date}`);
-    const mergedRates = {
-      ...(existing?.rates || {}),
-      EUR: 1,
-      [ccy]: rate
-    };
-    const daily = { date, source: 'manual', rates: mergedRates };
-    await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-    await idbSet('meta','lastEcbDate', daily.date);
+    try {
+      const existing = await idbGet('fx', `ecbDaily:${date}`);
+      const mergedRates = {
+        ...(existing?.rates || {}),
+        EUR: 1,
+        [ccy]: rate
+      };
+      const daily = { date, source: 'manual', rates: mergedRates };
+      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+      await idbSet('meta','lastEcbDate', daily.date);
 
-    $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
+      $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
+    } catch {
+      // Even if daily merge fails, the global manual rate is still stored.
+      $('ecbStatus').textContent = `Manuell gespeichert · (lokal) · 1 EUR = ${rate} ${ccy}`;
+    }
+
     $('manualFx').hidden = true;
-
-    toast('Manueller Kurs gespeichert.');
+    toast(where === 'cache' ? 'Kurs gespeichert (Offline-Speicher).' : 'Manueller Kurs gespeichert.');
     renderAll();
   }
 
@@ -1782,7 +1834,7 @@
     }
 
     // 2) Global manual fallback (device-wide)
-    const manual = await idbGet('fx', `manualRate:${cur}`);
+    const manual = await kvGet(`manualRate:${cur}`);
     if (manual && Number.isFinite(manual.ratePerEur) && manual.ratePerEur > 0){
       const date = new Date().toISOString().slice(0,10);
       const daily = { date, source: 'manual', rates: { EUR: 1, [cur]: manual.ratePerEur } };
@@ -1878,16 +1930,43 @@
   }
 
   async function listManualFx(){
-    const keys = await idbKeys('fx');
     const out = [];
-    for (const k of keys){
-      const ks = String(k||'');
-      if (!ks.startsWith('manualRate:')) continue;
-      const v = await idbGet('fx', k);
-      if (v && v.ccy && Number.isFinite(v.ratePerEur)) out.push(v);
+
+    // 1) IndexedDB keys (if available)
+    try {
+      const keys = await idbKeys('fx');
+      for (const k of keys){
+        const ks = String(k||'');
+        if (!ks.startsWith('manualRate:')) continue;
+        const v = await kvGet(k);
+        if (v && v.ccy && Number.isFinite(v.ratePerEur)) out.push(v);
+      }
+    } catch {}
+
+    // 2) Cache-storage fallback (if IndexedDB is flaky on iOS PWA)
+    try {
+      const cache = await caches.open(MANUAL_FX_CACHE);
+      const reqs = await cache.keys();
+      for (const req of reqs){
+        const url = new URL(req.url);
+        if (url.hostname !== 'local.kv') continue;
+        const k = decodeURIComponent(url.pathname.replace(/^\//,''));
+        if (!k.startsWith('manualRate:')) continue;
+        const v = await kvGet(k);
+        if (v && v.ccy && Number.isFinite(v.ratePerEur)) out.push(v);
+      }
+    } catch {}
+
+    // de-dupe by currency (prefer latest timestamp)
+    const by = new Map();
+    for (const r of out){
+      const cur = String(r.ccy||'').toUpperCase();
+      const prev = by.get(cur);
+      if (!prev || (Number(r.t)||0) > (Number(prev.t)||0)) by.set(cur, r);
     }
-    out.sort((a,b)=>String(a.ccy).localeCompare(String(b.ccy)));
-    return out;
+
+    const res = [...by.values()].sort((a,b)=>String(a.ccy).localeCompare(String(b.ccy)));
+    return res;
   }
 
   async function renderSettings(){
@@ -1919,6 +1998,8 @@
           const found = all.find(x=>x.ccy===c);
           if (found) $('settingsFxRate').value = String(found.ratePerEur);
         });
+        // keep select in sync
+        try { $('settingsFxCcy').value = c; } catch {}
       };
       row.addEventListener('click', pick);
       row.addEventListener('keydown', (e)=>{ if (e.key==='Enter' || e.key===' '){ e.preventDefault(); pick(); } });
@@ -1926,8 +2007,20 @@
   }
 
   async function openSettings(){
-    $('settingsFxCcy').value = '';
+    // Fill currency dropdown from active trip quick currencies + common.
+    const trip = state.activeTrip;
+    const list = trip ? [...new Set([...(trip.quickCurrencies||[]), trip.baseCurrency, ...COMMON_CCY].filter(Boolean))] : [...COMMON_CCY];
+    const sel = $('settingsFxCcy');
+    sel.innerHTML = '';
+    for (const c of list){
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    }
+
+    sel.value = (trip?.baseCurrency || 'EUR');
     $('settingsFxRate').value = '';
+
     await renderSettings();
     mSettings.showModal();
   }
@@ -1935,17 +2028,23 @@
   async function settingsSaveFx(){
     const ccy = ($('settingsFxCcy').value || '').trim().toUpperCase();
     const rate = parseFloat(($('settingsFxRate').value || '').replace(',','.'));
-    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
+    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung wählen.'); return; }
     if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
-    await idbSet('fx', `manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
-    toast('Manueller Kurs gespeichert.');
-    await renderSettings();
+
+    try {
+      const where = await kvSet(`manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
+      toast(where === 'cache' ? 'Kurs gespeichert (Offline-Speicher).' : 'Manueller Kurs gespeichert.');
+      await renderSettings();
+    } catch (e){
+      toast('Speichern nicht möglich.');
+      console.error(e);
+    }
   }
 
   async function settingsClearFx(){
     const ccy = ($('settingsFxCcy').value || '').trim().toUpperCase();
     if (!ccy || ccy.length !== 3){ toast('Bitte erst eine Währung wählen.'); return; }
-    await idbDel('fx', `manualRate:${ccy}`);
+    await kvDel(`manualRate:${ccy}`);
     toast('Manueller Kurs gelöscht.');
     await renderSettings();
   }
@@ -2171,7 +2270,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=4.3';
+    const swUrl = './sw.js?v=4.5';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
