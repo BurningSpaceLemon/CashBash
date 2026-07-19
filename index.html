@@ -504,6 +504,25 @@
   </div>
 </dialog>
 
+<!-- FX format chooser -->
+<dialog id="modalFxFormat">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Wechselkurs</div>
+      <div style="font-family:var(--display);font-weight:700">Format wählen</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small muted" id="fxFormatHint">—</div>
+    <div class="row2" style="margin-top:12px">
+      <button class="btn secondary" id="btnFxPickA">—</button>
+      <button class="btn" id="btnFxPickB">—</button>
+    </div>
+    <div class="small muted" style="margin-top:10px">Danach kannst du den Kurs eingeben. Wir speichern intern pro Reise immer den Kurs in Basiswährung.</div>
+  </div>
+</dialog>
+
 <!-- Settings -->
 <dialog id="modalSettings">
   <div class="modalHead">
@@ -2293,7 +2312,7 @@
 
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-    const swUrl = './sw.js?v=5.1';
+    const swUrl = './sw.js?v=5.2';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
