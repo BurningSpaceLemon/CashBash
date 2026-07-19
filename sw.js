@@ -11,7 +11,7 @@
    - Also bump the query param in register('./sw.js?v=...')
 */
 
-const SW_VERSION = 'v5.3';
+const SW_VERSION = 'v5.4';
 const CACHE_STATIC = `cashbash-static-${SW_VERSION}`;
 const CACHE_PAGES  = `cashbash-pages-${SW_VERSION}`;
 const KEEP_CACHES = new Set([CACHE_STATIC, CACHE_PAGES]);
