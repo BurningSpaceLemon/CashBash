@@ -2166,12 +2166,14 @@
         const t = state.trips.get(k);
         const active = (k === state.activeTripId);
         const del = isTripOwner(t) ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : '';
+        const share = `<button class="btn ghost small" data-share="${escapeHtml(t.id)}">Code teilen</button>`;
         return `
           <div class="pill" style="margin:10px 0; align-items:flex-start">
             <div style="min-width:0">
               <b>${escapeHtml(t.title)}</b>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              ${share}
               <button class="btn ${active?'secondary':'ghost'} small" data-trip="${escapeHtml(t.id)}">${active?'Aktiv':'Aktivieren'}</button>
               ${del}
             </div>
@@ -2191,6 +2193,43 @@
         mTrips.close();
         await startTripSync(state.activeTrip);
         renderAll();
+      });
+    });
+
+    $('tripList').querySelectorAll('button[data-share]').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        const id = b.getAttribute('data-share');
+        await loadTripsMap();
+        const t = state.trips.get(id);
+        if (!t) return;
+
+        // Ensure a passphrase exists locally; if missing, generate one and persist.
+        let pass = await idbGet('meta', `tripPass:${t.id}`);
+        if (!pass){
+          pass = randomId('key').slice(0, 22);
+          const salt = crypto.getRandomValues(new Uint8Array(16));
+          t.keySaltB64 = b64(salt);
+          await idbSet('trips', t.id, t);
+          await idbSet('meta', `tripPass:${t.id}`, pass);
+        }
+
+        // Share uses the existing invite modal + copy flow
+        const payload = {
+          v: 2,
+          tripId: t.id,
+          title: t.title,
+          baseCurrency: t.baseCurrency,
+          quickCurrencies: t.quickCurrencies,
+          members: t.members,
+          relayTopic: t.relayTopic,
+          ownerDeviceId: t.ownerDeviceId,
+          keySaltB64: t.keySaltB64,
+          pass
+        };
+
+        const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+        $('inviteCode').value = code;
+        mInvite.showModal();
       });
     });
 
@@ -2312,7 +2351,7 @@
 
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-    const swUrl = './sw.js?v=5.2';
+    const swUrl = './sw.js?v=5.3';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2412,7 +2451,8 @@
     }, { capture: true });
 
     // Onboarding: fill selects when dialog is used
-    try { fillNewTripCurrencyUI(); } catch {}
+    // IMPORTANT: run after a tick so DOM is ready and the dialog content exists.
+    setTimeout(()=>{ try { fillNewTripCurrencyUI(); } catch {} }, 0);
 
     $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
