@@ -317,14 +317,12 @@
       border:0;
     }
 
-    /* Settled state */
     .disabled{
       opacity: .55;
       filter: grayscale(.2);
       pointer-events:none;
     }
 
-    /* Ensure app is visible even if JS fails */
     #app[hidden]{ display:block; }
   </style>
 </head>
@@ -376,7 +374,6 @@
       <label for="payer">Gezahlt von</label>
       <select id="payer"></select>
 
-
       <div style="margin-top:14px">
         <div class="eyebrow">Bezahlt für</div>
         <div class="small">Tippen zum Abwählen</div>
@@ -389,8 +386,6 @@
         <span class="small muted" id="settledHint" style="display:none">Reise ist abgeschlossen — neue Ausgaben sind gesperrt.</span>
       </div>
     </section>
-
-
 
     <section class="list">
       <div class="head">
@@ -413,16 +408,12 @@
         </table>
       </div>
     </section>
-
-
-
   </section>
 
   <!-- Dashboard Screen -->
   <section class="screen" id="screenDashboard" data-active="0">
     <section class="card">
 
-      <!-- Ranking first -->
       <div class="list">
         <div class="head">
           <b>Ranking (Zahlungen)</b>
@@ -442,7 +433,6 @@
         </div>
       </div>
 
-      <!-- Final settlement card -->
       <div class="list" style="margin-top:14px; border-color: rgba(255,202,92,.22)">
         <div class="head" style="background: rgba(255,202,92,.07); border-bottom-color: rgba(255,202,92,.14)">
           <b>Final: Wenn wir jetzt ausgleichen…</b>
@@ -702,7 +692,6 @@
 (() => {
   'use strict';
 
-  // ---------- Utilities ----------
   const $ = (id) => document.getElementById(id);
 
   function toast(msg){
@@ -710,8 +699,6 @@
     if (!t) return;
     t.textContent = String(msg || '');
     t.classList.add('show');
-
-    // iOS PWA: sometimes timers or rapid transitions feel flaky; keep it visible a bit longer.
     clearTimeout(toast._t);
     toast._t = setTimeout(()=>t.classList.remove('show'), 3200);
   }
@@ -801,9 +788,29 @@
     });
   }
 
+  async function idbDel(store, key){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      const st = tx.objectStore(store);
+      const req = st.delete(key);
+      req.onsuccess = ()=>resolve(true);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbKeys(store){
+    const db = await openDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const st = tx.objectStore(store);
+      const req = st.getAllKeys();
+      req.onsuccess = ()=>resolve(req.result || []);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
   // ---------- Persistent KV fallback (iOS PWA) ----------
-  // Some iOS PWA setups can behave strangely with IndexedDB writes (silent aborts).
-  // We keep a small manual-FX cache in Cache Storage as a robust fallback.
   const MANUAL_FX_CACHE = 'cashbash-manual-fx-v1';
 
   async function kvSet(key, obj){
@@ -846,28 +853,6 @@
       const req = new Request('https://local.kv/' + encodeURIComponent(key));
       await cache.delete(req);
     } catch {}
-  }
-
-  async function idbDel(store, key){
-    const db = await openDB();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store,'readwrite');
-      const st = tx.objectStore(store);
-      const req = st.delete(key);
-      req.onsuccess = ()=>resolve(true);
-      req.onerror = ()=>reject(req.error);
-    });
-  }
-
-  async function idbKeys(store){
-    const db = await openDB();
-    return new Promise((resolve, reject)=>{
-      const tx = db.transaction(store,'readonly');
-      const st = tx.objectStore(store);
-      const req = st.getAllKeys();
-      req.onsuccess = ()=>resolve(req.result || []);
-      req.onerror = ()=>reject(req.error);
-    });
   }
 
   // ---------- Crypto (MVP passphrase -> AES-GCM) ----------
@@ -926,39 +911,28 @@
   const COMMON_CCY = ['EUR','USD','GBP','CHF','JPY','SEK','NOK','DKK','CAD','AUD','PLN','CZK','HUF'];
 
   // ---------- Event model ----------
-  // ExpenseCreated { expenseId, amount, ccy, what, payerMemberId, participantMemberIds }
-  // ExpenseVoided  { targetExpenseId }
-  // TripDeleted    { tripId }
-  // TripSettled    { snapshotId, settleCurrency, fxDate, fxSource }
-
   function applyEvents(events){
     const created = new Map();
     const voided = new Set();
-
-    // settlement checkpoint (optional)
     let settled = null;
 
     for (const e of events){
       if (e.type === 'ExpenseCreated') created.set(e.data.expenseId, e);
       if (e.type === 'ExpenseVoided') voided.add(e.data.targetExpenseId);
-
-      if (e.type === 'TripSettled'){
-        // last one wins
-        settled = e;
-      }
+      if (e.type === 'TripSettled') settled = e;
     }
 
     const expenses = [];
     for (const [expenseId, ev] of created.entries()){
       if (voided.has(expenseId)) continue;
-      if (settled && ev.t > settled.t) continue; // freeze at settlement time
+      if (settled && ev.t > settled.t) continue;
       expenses.push(ev);
     }
 
     expenses.sort((a,b)=>a.t-b.t);
     return expenses;
   }
-  
+
   function getSettlementEvent(events){
     let settled = null;
     for (const e of events){
@@ -1016,7 +990,7 @@
     return 'hash: ' + stableHash(payload);
   }
 
-  // ---------- Trips / ownership ----------
+  // ---------- Trips ----------
   function defaultTrip(){
     return {
       id: randomId('trip'),
@@ -1070,8 +1044,16 @@
     try {
       state.gun = Gun({ peers: ['https://gun-manhattan.herokuapp.com/gun'] });
     } catch (e){
-      // no console in some PWAs; keep silent
+      // silent
     }
+  }
+
+  function setSyncState(kind, label){
+    const dot = $('syncDot');
+    if (kind === 'live'){ dot.style.background = 'rgba(64,224,208,.95)'; }
+    else if (kind === 'paused'){ dot.style.background = 'rgba(255,202,92,.90)'; }
+    else { dot.style.background = 'rgba(243,245,255,.25)'; }
+    $('syncLabel').textContent = label;
   }
 
   async function startTripSync(trip){
@@ -1096,7 +1078,6 @@
 
     setSyncState('live', 'Sync aktiv (Relay)');
 
-    // trip delete marker
     tripNode.map().on(async (data) => {
       if (!data || !data.iv || !data.ct) return;
       try {
@@ -1110,7 +1091,6 @@
       } catch {}
     });
 
-    // events
     state.gunNode.map().on(async (data) => {
       if (!data || !data.iv || !data.ct) return;
       try {
@@ -1168,10 +1148,7 @@
     return events;
   }
 
-  // ---------- FX v2 (Trip-scoped: confirm-on-first-use + settlement review) ----------
-  // Old model used a global (device-wide) EUR-based cache.
-  // New model stores a confirmed rate per trip and currency (from -> trip.baseCurrency).
-
+  // ---------- FX v2 ----------
   function fxTripKey(tripId, fromCcy, toCcy){
     return `tripFx:${tripId}:${String(fromCcy||'').toUpperCase()}:${String(toCcy||'').toUpperCase()}`;
   }
@@ -1215,7 +1192,6 @@
     const existing = await idbGet('fx', key);
     if (existing && Number.isFinite(existing.rate) && existing.rate > 0) return existing;
 
-    // Suggest from ECB (best effort)
     let suggestionRate = null;
     let suggestionDate = null;
     let suggestionSource = null;
@@ -1224,7 +1200,7 @@
       const daily = await fetchEcbDaily();
       await idbSet('fx', `ecbDaily:${daily.date}`, daily);
       await idbSet('meta','lastEcbDate', daily.date);
-      suggestionRate = fxConvertViaEur(1, from, to, daily.rates); // 1 FROM = x TO
+      suggestionRate = fxConvertViaEur(1, from, to, daily.rates);
       suggestionDate = daily.date;
       suggestionSource = 'ECB';
     } catch {
@@ -1239,9 +1215,9 @@
       }
     }
 
-    // MVP UI: prompt. (Later: replace with a proper modal.)
     const dateLabel = suggestionDate ? ` (Stand: ${suggestionDate})` : '';
     const prefill = Number.isFinite(suggestionRate) ? String(Math.round(suggestionRate*1000000)/1000000) : '';
+
     const defaultMode = 'A';
     const mode = (prompt(
       `Wechselkurs-Format wählen:\nA) 1 ${from} = X ${to}\nB) 1 ${to} = X ${from}\n\nGib A oder B ein:`,
@@ -1272,7 +1248,7 @@
       return null;
     }
 
-    const rate = effMode === 'A' ? raw : (1 / raw); // store canonical: TO per 1 FROM
+    const rate = effMode === 'A' ? raw : (1 / raw);
 
     const rec = {
       tripId: trip.id,
@@ -1340,7 +1316,6 @@
     const trip = state.activeTrip;
     if (!trip){ toast('Keine aktive Reise.'); return; }
 
-    // 1) Load events first (so we can detect "already settled" and also compute "everything already balanced")
     const allEvents = await loadTripEvents(trip.id);
     const alreadySettled = getSettlementEvent(allEvents);
     if (alreadySettled){
@@ -1348,7 +1323,6 @@
       return;
     }
 
-    // IMPORTANT: use un-frozen expense set for conversion + computing balances
     const expensesRaw = (() => {
       const created = new Map();
       const voided = new Set();
@@ -1364,8 +1338,6 @@
       return out;
     })();
 
-    // 2) If all balances are already zero (base-only), allow closing the trip without FX.
-    // This covers the case "alle Summen ausgeglichen".
     const baseOnlyForCheck = expensesRaw.filter(e => e.data.ccy === trip.baseCurrency);
     const bal0 = computeBalancesBase(baseOnlyForCheck, trip);
     const isAllZero = [...bal0.values()].every(v => Math.abs(v) < 0.005);
@@ -1404,12 +1376,10 @@
       return;
     }
 
-    // 3) Review stored trip FX rates one more time at settlement (user can adjust)
     await reviewTripRatesAtSettlement(trip);
 
     const settleCcy = trip.baseCurrency;
 
-    // 4) Convert every expense to base using per-trip rates
     const baseExpenses = [];
     for (const ev of expensesRaw){
       const d = ev.data;
@@ -1432,7 +1402,6 @@
       });
     }
 
-    // 5) Save snapshot (store used trip rates)
     const used = {};
     for (const r of await listTripRates(trip)) used[r.from] = r.rate;
 
@@ -1448,7 +1417,6 @@
     };
     await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
 
-    // 6) Write TripSettled checkpoint event (freeze)
     const settleEv = {
       id: randomId('evt'),
       type: 'TripSettled',
@@ -1462,7 +1430,6 @@
       }
     };
 
-    // 7) Store derived deterministic transfers (so every device sees the same)
     const bal = computeBalancesBase(baseExpenses, trip);
     const transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
     await idbSet('fx', `settlement:${snapshot.id}`, { snapshotId: snapshot.id, tripId: trip.id, t: Date.now(), transfers });
@@ -1474,7 +1441,6 @@
     renderAll();
   }
 
-  // Snapshot is created automatically during settlement in FX v2.
   async function finalizeSnapshot(){
     toast('Snapshot wird beim Abschluss automatisch erstellt.');
   }
@@ -1498,15 +1464,6 @@
     renderAll();
   }
 
-  // ---------- UI: sync indicator ----------
-  function setSyncState(kind, label){
-    const dot = $('syncDot');
-    if (kind === 'live'){ dot.style.background = 'rgba(64,224,208,.95)'; }
-    else if (kind === 'paused'){ dot.style.background = 'rgba(255,202,92,.90)'; }
-    else { dot.style.background = 'rgba(243,245,255,.25)'; }
-    $('syncLabel').textContent = label;
-  }
-
   // ---------- UI: modals ----------
   function wireModal(id){
     const d = $(id);
@@ -1523,7 +1480,6 @@
   const mSettle = wireModal('modalSettle');
   const mExpenseDetails = wireModal('modalExpenseDetails');
 
-  // close dialogs on backdrop click
   function wireBackdropClose(){
     document.querySelectorAll('dialog').forEach(d=>{
       d.addEventListener('click', (e)=>{
@@ -1573,10 +1529,8 @@
       state.activeTrip = null;
 
       if (!state.trips.size){
-        // first start -> onboarding
         mOnboarding.showModal();
       } else {
-        // let user pick
         mTrips.showModal();
       }
       return;
@@ -1585,16 +1539,12 @@
     state.activeTripId = active;
     state.activeTrip = state.trips.get(active);
 
-    // ensure member exists
     if (state.activeTrip){
-      // NOTE: if trip was settled, we keep it readable but new expenses are discouraged.
-      // (UI disable comes next iteration.)
       const hasMe = state.activeTrip.members.some(m=>m.name === state.user.name);
       if (!hasMe){
         state.activeTrip.members.push({ id: randomId('m'), name: state.user.name });
         await idbSet('trips', state.activeTrip.id, state.activeTrip);
       }
-
       await startTripSync(state.activeTrip);
     }
   }
@@ -1667,7 +1617,6 @@
 
     $('expenseCount').textContent = String(expenses.length);
 
-    // Disable adding new expenses after settlement
     const addBtn = $('btnAddExpense');
     const addCard = $('addExpenseCard');
     const hint = $('settledHint');
@@ -1681,7 +1630,6 @@
       if (hint) hint.style.display = 'none';
     }
 
-    // Table
     const tbody = $('expenses');
     tbody.innerHTML = '';
     for (const ev of expenses){
@@ -1715,7 +1663,6 @@
       };
 
       tr.addEventListener('click', (e)=>{
-        // clicking the Void button should not open the details modal
         if (e.target && e.target.closest && e.target.closest('button[data-void]')) return;
         openDetails();
       });
@@ -1764,7 +1711,6 @@
     const settled = getSettlementEvent(events);
     const expenses = applyEvents(events);
 
-    // If settled, show metadata
     const meta = $('settledMeta');
     if (meta){
       if (settled){
@@ -1776,7 +1722,6 @@
       }
     }
 
-    // Totals + ranking (still base-only for now; FX-aware totals can come next)
     let totalBase = 0;
     let nonBase = 0;
     const paid = new Map(trip.members.map(m=>[m.id,0]));
@@ -1794,22 +1739,17 @@
     $('dashTotal').textContent = fmtMoney(totalBase, trip.baseCurrency);
     $('dashNote').textContent = nonBase ? `+ ${nonBase} FX (wird beim Abschluss umgerechnet)` : 'nur Base‑Währung';
 
-    // Settlement preview
-    // - Before settlement: base-only preview
-    // - After settlement: show the stored deterministic transfers (so everyone sees the same)
     let bal;
     let transfers;
     if (settled && settled.ref){
       const stored = await idbGet('fx', `settlement:${settled.ref}`);
       transfers = stored?.transfers || [];
-      // bal not needed in this branch
     } else {
       const baseOnly = expenses.filter(e => e.data.ccy === trip.baseCurrency);
       bal = computeBalancesBase(baseOnly, trip);
       transfers = settlementTransfers(new Map([...bal.entries()].map(([k,v])=>[k,v])));
     }
 
-    // "Du (Netto)" only meaningful from balances; keep base-only before settlement.
     const myId = trip.members.find(m=>m.name===state.user.name)?.id;
     if (myId && bal){
       const myBal = bal.get(myId) || 0;
@@ -1819,8 +1759,6 @@
     }
 
     $('transferCount').textContent = String(transfers.length);
-
-    // FX-aware dashboard totals: after settlement we show deterministic final transfers.
 
     if (!transfers.length){
       $('settlement').innerHTML = '<span class="muted">Keine Transfers nötig (für Base‑Währung).</span>';
@@ -1848,7 +1786,6 @@
   }
 
   async function renderAll(){
-    // Keep UI consistent even if render fails
     try {
       await renderExpenses();
       await renderDashboard();
@@ -1858,13 +1795,10 @@
   }
 
   // ---------- Actions ----------
-  // (deprecated) ensureFxForCurrency removed in FX v2.
-
   async function addExpense(){
     const trip = state.activeTrip;
     if (!trip){ toast('Keine aktive Reise.'); return; }
 
-    // block if settled
     const eventsNow = await loadTripEvents(trip.id);
     if (getSettlementEvent(eventsNow)){
       toast('Reise ist abgeschlossen — neue Ausgaben sind gesperrt.');
@@ -1883,10 +1817,9 @@
     if (!what){ toast('Bitte "Wofür" ausfüllen.'); return; }
     if (!participants.length){ toast('Mindestens eine Person auswählen.'); return; }
 
-    // If FX, confirm trip-specific rate once (auto-suggested from ECB, user can adjust)
     if (ccy !== trip.baseCurrency){
       const rec = await getOrConfirmTripRate(trip, ccy);
-      if (!rec) return; // user cancelled/invalid
+      if (!rec) return;
     }
 
     const expenseId = randomId('x');
@@ -1928,16 +1861,9 @@
   }
 
   // ---------- Settings (Global manual FX) ----------
-  function fxKeyFromCcy(ccy){
-    const cur = String(ccy||'').trim().toUpperCase();
-    if (!cur || cur.length !== 3) return null;
-    return `manualRate:${cur}`;
-  }
-
   async function listManualFx(){
     const out = [];
 
-    // 1) IndexedDB keys (if available)
     try {
       const keys = await idbKeys('fx');
       for (const k of keys){
@@ -1948,7 +1874,6 @@
       }
     } catch {}
 
-    // 2) Cache-storage fallback (if IndexedDB is flaky on iOS PWA)
     try {
       const cache = await caches.open(MANUAL_FX_CACHE);
       const reqs = await cache.keys();
@@ -1962,7 +1887,6 @@
       }
     } catch {}
 
-    // de-dupe by currency (prefer latest timestamp)
     const by = new Map();
     for (const r of out){
       const cur = String(r.ccy||'').toUpperCase();
@@ -1970,8 +1894,7 @@
       if (!prev || (Number(r.t)||0) > (Number(prev.t)||0)) by.set(cur, r);
     }
 
-    const res = [...by.values()].sort((a,b)=>String(a.ccy).localeCompare(String(b.ccy)));
-    return res;
+    return [...by.values()].sort((a,b)=>String(a.ccy).localeCompare(String(b.ccy)));
   }
 
   async function renderSettings(){
@@ -1998,12 +1921,10 @@
       const pick = ()=>{
         const c = row.getAttribute('data-ccy');
         $('settingsFxCcy').value = c;
-        // best-effort fill rate
         listManualFx().then(all=>{
           const found = all.find(x=>x.ccy===c);
           if (found) $('settingsFxRate').value = String(found.ratePerEur);
         });
-        // keep select in sync
         try { $('settingsFxCcy').value = c; } catch {}
       };
       row.addEventListener('click', pick);
@@ -2012,7 +1933,6 @@
   }
 
   async function openSettings(){
-    // Fill currency dropdown from active trip quick currencies + common.
     const trip = state.activeTrip;
     const list = trip ? [...new Set([...(trip.quickCurrencies||[]), trip.baseCurrency, ...COMMON_CCY].filter(Boolean))] : [...COMMON_CCY];
     const sel = $('settingsFxCcy');
@@ -2083,7 +2003,6 @@
       pass
     };
 
-    // NOTE: For MVP the invite is base64 JSON. In a later iteration we can encrypt this payload too.
     const code = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
     $('inviteCode').value = code;
     mInvite.showModal();
@@ -2170,7 +2089,6 @@
       $('tripList').innerHTML = keys.map(k=>{
         const t = state.trips.get(k);
         const active = (k === state.activeTripId);
-        const ownerBadge = t.ownerDeviceId ? `<span class="kbd">Owner ${escapeHtml(t.ownerDeviceId)}</span>` : `<span class="kbd">Owner —</span>`;
         const del = isTripOwner(t) ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : '';
         return `
           <div class="pill" style="margin:10px 0; align-items:flex-start">
@@ -2240,7 +2158,6 @@
     t.quickCurrencies = quick.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
     if (!t.quickCurrencies.includes(t.baseCurrency)) t.quickCurrencies.unshift(t.baseCurrency);
 
-    // passphrase + salt
     const pass = randomId('key').slice(0, 22);
     const salt = crypto.getRandomValues(new Uint8Array(16));
     t.keySaltB64 = b64(salt);
@@ -2260,21 +2177,8 @@
     renderAll();
   }
 
-  async function openSettle(){
-    const trip = state.activeTrip;
-    if (!trip){ toast('Keine aktive Reise.'); return; }
-
-    $('settleCcy').value = trip.baseCurrency || 'EUR';
-    $('ecbStatus').textContent = '—';
-    $('manualFx').hidden = true;
-    mSettle.showModal();
-  }
-
-  // ---------- Service worker ----------
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-
-    // Bump query param on every release to help iOS notice.
     const swUrl = './sw.js?v=4.6';
 
     try {
@@ -2304,7 +2208,6 @@
     }
   }
 
-  // ---------- Wiring ----------
   function wireUI(){
     $('tabExpenses').addEventListener('click', ()=>setTab('expenses'));
     $('tabDashboard').addEventListener('click', ()=>setTab('dashboard'));
@@ -2316,8 +2219,12 @@
 
     $('btnAddExpense').addEventListener('click', addExpense);
 
-    $('btnInvite').addEventListener('click', openInvite);
-    $('btnJoin').addEventListener('click', openJoin);
+    // Invite/Join are only reachable via code paths; keep buttons wired by ID.
+    // (IDs exist in markup.)
+    const btnInvite = $('btnInvite');
+    if (btnInvite) btnInvite.addEventListener('click', openInvite);
+    const btnJoin = $('btnJoin');
+    if (btnJoin) btnJoin.addEventListener('click', openJoin);
 
     $('btnDoJoin').addEventListener('click', doJoin);
 
@@ -2326,8 +2233,6 @@
 
     $('btnNewTrip').addEventListener('click', newTrip);
 
-    // ECB fetch button is deprecated in FX v2 (rates are fetched on first FX use).
-    // Keep the UI button as a friendly shortcut to preload ECB, but don't depend on it.
     $('btnFetchEcb').addEventListener('click', async ()=>{
       try {
         const daily = await fetchEcbDaily();
@@ -2342,17 +2247,8 @@
 
     $('btnFinalize').addEventListener('click', finalizeSnapshot);
 
-    // Manual FX save button is no longer used (trip-scoped FX is confirmed on first use).
-    // Keep it wired to a small helper (creates/updates a trip FX rate) for compatibility.
     const manualBtn = $('btnSaveManualFx');
-    if (manualBtn) manualBtn.addEventListener('click', async ()=>{
-      try {
-        await openTripFxEditorPrompt();
-      } catch (e){
-        toast('Kurs-Editor fehlgeschlagen.');
-        console.error(e);
-      }
-    });
+    if (manualBtn) manualBtn.addEventListener('click', ()=>toast('Manueller Kurs: nutze Einstellungen oder bestätige Kurs beim Erfassen.'));
 
     const btnSettingsSaveFx = $('btnSettingsSaveFx');
     if (btnSettingsSaveFx) btnSettingsSaveFx.addEventListener('click', settingsSaveFx);
@@ -2371,8 +2267,6 @@
       }
     });
 
-    // --- Hard iOS debugging: global click beacon (only visible as toast) ---
-    // This helps distinguish "handler not wired" vs "handler wired but storage fails".
     document.addEventListener('click', (e)=>{
       try {
         const b = e.target && e.target.closest ? e.target.closest('button') : null;
@@ -2401,7 +2295,6 @@
   }
 
   async function init(){
-    // Set baseline UI state synchronously
     setTab('expenses');
 
     await initSW();
@@ -2411,21 +2304,17 @@
 
     wireUI();
 
-    // If we now have a trip, render.
     renderAll();
 
-    // Sync label baseline
     if (!state.gun) setSyncState(navigator.onLine ? 'paused' : 'offline', navigator.onLine ? 'Online (ohne Relay)' : 'Offline');
 
-    // If no trip is active, ensure modals are shown
     if (!state.activeTrip){
       if (!state.trips.size) mOnboarding.showModal();
     }
   }
 
-  // Global error trap -> toast (helps iOS PWA)
   window.addEventListener('error', (e)=>{ try { toast('JS-Fehler: ' + (e.message || 'unknown')); } catch {} });
-  window.addEventListener('unhandledrejection', (e)=>{ try { toast('Promise-Fehler'); } catch {} });
+  window.addEventListener('unhandledrejection', ()=>{ try { toast('Promise-Fehler'); } catch {} });
 
   init();
 })();
