@@ -471,6 +471,32 @@
   </div>
   <div class="modal">
     <div class="small">Erstelle eine Reise oder tritt per Code bei. Danach landest du in „Ausgaben“.</div>
+
+    <div class="list" style="margin-top:14px">
+      <div class="head">
+        <b>Neue Reise</b>
+        <span class="small">Basis & Schnellauswahl</span>
+      </div>
+      <div style="padding:12px 14px">
+        <label for="newTripTitle">Name</label>
+        <input id="newTripTitle" placeholder="z.B. Island 2026" />
+
+        <div class="row2" style="margin-top:12px">
+          <div>
+            <label for="newTripBase">Basiswährung</label>
+            <select id="newTripBase"></select>
+          </div>
+          <div>
+            <label for="newTripQuick">Schnellauswahl (mehrfach)</label>
+            <select id="newTripQuick" multiple size="6"></select>
+            <div class="small muted" style="margin-top:6px">Tipp: Mehrfachauswahl mit ⌘/Strg oder Tippen (mobil).</div>
+          </div>
+        </div>
+
+        <div class="small muted" style="margin-top:10px">Die Basiswährung wird immer automatisch zur Schnellauswahl hinzugefügt.</div>
+      </div>
+    </div>
+
     <div class="row2" style="margin-top:12px">
       <button class="btn secondary" id="btnOnboardCreate">Reise erstellen</button>
       <button class="btn" id="btnOnboardJoin">Mit Code beitreten</button>
@@ -1218,13 +1244,11 @@
     const dateLabel = suggestionDate ? ` (Stand: ${suggestionDate})` : '';
     const prefill = Number.isFinite(suggestionRate) ? String(Math.round(suggestionRate*1000000)/1000000) : '';
 
-    const defaultMode = 'A';
-    const mode = (prompt(
-      `Wechselkurs-Format wählen:\nA) 1 ${from} = X ${to}\nB) 1 ${to} = X ${from}\n\nGib A oder B ein:`,
-      defaultMode
-    ) || '').trim().toUpperCase();
-
-    const effMode = (mode === 'B') ? 'B' : 'A';
+    // UI change: no A/B prompt. Use a confirm dialog as a simple two-button choice.
+    // OK = Format A, Cancel = Format B.
+    const effMode = confirm(
+      `Wechselkurs-Format wählen:\n\nOK: 1 ${from} = X ${to}\nAbbrechen: 1 ${to} = X ${from}`
+    ) ? 'A' : 'B';
 
     const promptText = effMode === 'A'
       ? `Wechselkurs für diese Reise festlegen:\n1 ${from} = ? ${to}${dateLabel}\n\nVorschlag${suggestionSource ? ' aus ' + suggestionSource : ''}: ${prefill || '—'}\n\nGib den Kurs ein (oder Abbrechen, um zurückzugehen).`
@@ -1307,9 +1331,22 @@
     const to = String(trip.baseCurrency||'EUR').toUpperCase();
     if (from === to) return amount;
 
+    // 1) Prefer trip-scoped rate
     const r = await idbGet('fx', fxTripKey(trip.id, from, to));
-    if (!r || !Number.isFinite(r.rate) || r.rate <= 0) throw new Error('Missing trip rate');
-    return amount * r.rate;
+    if (r && Number.isFinite(r.rate) && r.rate > 0) return amount * r.rate;
+
+    // 2) Fallback: use global manual EUR-based rates if possible
+    // manualRate: 1 EUR = X CCY
+    const fromPerEur = await getGlobalManualRatePerEur(from); // 1 EUR = X FROM
+    const toPerEur = await getGlobalManualRatePerEur(to);     // 1 EUR = X TO
+
+    if (fromPerEur && toPerEur){
+      // Convert: FROM -> EUR -> TO
+      const eur = amount / fromPerEur;
+      return eur * toPerEur;
+    }
+
+    throw new Error('Missing trip rate');
   }
 
   async function settleTripFinal(){
@@ -1722,22 +1759,42 @@
       }
     }
 
+    // Totals + ranking (FX-aware): include all expenses, converting to base using trip rates.
     let totalBase = 0;
     let nonBase = 0;
+    let missingFx = 0;
+
     const paid = new Map(trip.members.map(m=>[m.id,0]));
+
     for (const ev of expenses){
-      if (ev.data.ccy === trip.baseCurrency){
-        const amt = Number(ev.data.amount) || 0;
-        totalBase += amt;
-        paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + amt);
-      } else {
+      const amt = Number(ev.data.amount) || 0;
+      const from = ev.data.ccy;
+
+      let baseAmt = amt;
+      if (from !== trip.baseCurrency){
         nonBase++;
+        try {
+          baseAmt = await convertAmountUsingTripRate(trip, amt, from);
+        } catch {
+          missingFx++;
+          continue;
+        }
       }
+
+      baseAmt = Math.round(baseAmt*100)/100;
+      totalBase += baseAmt;
+      paid.set(ev.data.payerMemberId, (paid.get(ev.data.payerMemberId)||0) + baseAmt);
     }
+
     totalBase = Math.round(totalBase*100)/100;
 
     $('dashTotal').textContent = fmtMoney(totalBase, trip.baseCurrency);
-    $('dashNote').textContent = nonBase ? `+ ${nonBase} FX (wird beim Abschluss umgerechnet)` : 'nur Base‑Währung';
+
+    if (missingFx){
+      $('dashNote').textContent = `${nonBase} FX · ${missingFx} ohne Kurs (nicht eingerechnet)`;
+    } else {
+      $('dashNote').textContent = nonBase ? `${nonBase} FX · umgerechnet in ${trip.baseCurrency}` : 'nur Base‑Währung';
+    }
 
     let bal;
     let transfers;
@@ -2146,17 +2203,74 @@
     mTrips.showModal();
   }
 
-  async function newTrip(){
-    const title = prompt('Name der Reise:', 'Reise') || '';
+  function fillNewTripCurrencyUI(){
+    const baseSel = $('newTripBase');
+    const quickSel = $('newTripQuick');
+    if (!baseSel || !quickSel) return;
+
+    const list = [...new Set([...COMMON_CCY])];
+
+    baseSel.innerHTML = '';
+    for (const c of list){
+      const o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      baseSel.appendChild(o);
+    }
+    baseSel.value = 'EUR';
+
+    const renderQuick = ()=>{
+      const base = (baseSel.value || 'EUR').toUpperCase();
+      quickSel.innerHTML = '';
+
+      for (const c of list){
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        if (c === base || ['EUR','USD','GBP','CHF'].includes(c)) o.selected = true;
+        quickSel.appendChild(o);
+      }
+    };
+
+    renderQuick();
+    baseSel.addEventListener('change', renderQuick);
+  }
+
+  function readNewTripForm(){
+    const title = ($('newTripTitle')?.value || '').trim();
+    const base = ($('newTripBase')?.value || 'EUR').trim().toUpperCase();
+
+    const quickSel = $('newTripQuick');
+    const selected = quickSel
+      ? Array.from(quickSel.selectedOptions || []).map(o=>String(o.value||'').toUpperCase()).filter(Boolean)
+      : [];
+
+    const quick = [...new Set([base, ...selected])].filter(c=>c && c.length === 3);
+
+    return {
+      title: title || 'Reise',
+      baseCurrency: (base && base.length === 3) ? base : 'EUR',
+      quickCurrencies: quick.length ? quick : [ (base && base.length===3) ? base : 'EUR', 'USD','GBP','CHF' ]
+    };
+  }
+
+  async function newTrip({ fromOnboarding=false } = {}){
     const t = defaultTrip();
-    t.title = title.trim() || 'Reise';
 
-    const base = prompt('Basiswährung (z.B. EUR):', 'EUR') || 'EUR';
-    t.baseCurrency = base.trim().toUpperCase() || 'EUR';
+    if (fromOnboarding){
+      const form = readNewTripForm();
+      t.title = form.title;
+      t.baseCurrency = form.baseCurrency;
+      t.quickCurrencies = form.quickCurrencies;
+    } else {
+      // Fallback for the Trips modal path (keep prompts as a backup)
+      const title = prompt('Name der Reise:', 'Reise') || '';
+      t.title = title.trim() || 'Reise';
 
-    const quick = prompt('Schnellauswahl (kommagetrennt, z.B. EUR,USD,GBP):', 'EUR,USD,GBP,CHF') || '';
-    t.quickCurrencies = quick.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
-    if (!t.quickCurrencies.includes(t.baseCurrency)) t.quickCurrencies.unshift(t.baseCurrency);
+      const base = (prompt('Basiswährung (z.B. EUR):', 'EUR') || 'EUR').trim().toUpperCase();
+      t.baseCurrency = (base && base.length === 3) ? base : 'EUR';
+
+      t.quickCurrencies = ['EUR','USD','GBP','CHF'];
+      if (!t.quickCurrencies.includes(t.baseCurrency)) t.quickCurrencies.unshift(t.baseCurrency);
+    }
 
     const pass = randomId('key').slice(0, 22);
     const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -2171,7 +2285,7 @@
     state.activeTrip = t;
 
     toast('Neue Reise erstellt.');
-    mTrips.close();
+    try { mTrips.close(); } catch {}
 
     await startTripSync(t);
     renderAll();
@@ -2179,7 +2293,7 @@
 
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-    const swUrl = './sw.js?v=5';
+    const swUrl = './sw.js?v=4.6';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2278,9 +2392,12 @@
       } catch {}
     }, { capture: true });
 
+    // Onboarding: fill selects when dialog is used
+    try { fillNewTripCurrencyUI(); } catch {}
+
     $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
-      await newTrip();
+      await newTrip({ fromOnboarding: true });
       setTab('expenses');
     });
     $('btnOnboardJoin').addEventListener('click', ()=>{
