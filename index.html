@@ -793,7 +793,14 @@
       const st = tx.objectStore(store);
       const req = st.put(val, key);
       req.onsuccess = ()=>resolve(true);
-      req.onerror = ()=>reject(req.error);
+      req.onerror = ()=>{
+        try { toast('Speichern fehlgeschlagen (IndexedDB).'); } catch {}
+        reject(req.error);
+      };
+      tx.onabort = ()=>{
+        try { toast('Speichern abgebrochen (IndexedDB).'); } catch {}
+        reject(tx.error || new Error('tx abort'));
+      };
     });
   }
 
@@ -2164,7 +2171,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=4.2';
+    const swUrl = './sw.js?v=4.3';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
