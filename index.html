@@ -672,6 +672,7 @@
     <div id="tripList" style="margin-top:10px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
       <button class="btn" id="btnNewTrip">Neue Reise anlegen</button>
+      <button class="btn secondary" id="btnTripsJoin">Mit Code beitreten</button>
     </div>
   </div>
 </dialog>
@@ -2410,7 +2411,7 @@
 
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-    const swUrl = './sw.js?v=5.4';
+    const swUrl = './sw.js?v=5.5';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2463,6 +2464,9 @@
     $('btnRefreshInvite').addEventListener('click', refreshInvite);
 
     $('btnNewTrip').addEventListener('click', newTrip);
+
+    const btnTripsJoin = $('btnTripsJoin');
+    if (btnTripsJoin) btnTripsJoin.addEventListener('click', ()=>openJoin());
 
     $('btnFetchEcb').addEventListener('click', async ()=>{
       try {
