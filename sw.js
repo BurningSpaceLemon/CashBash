@@ -1,25 +1,27 @@
-/* CashBash Service Worker (GitHub Pages / iOS Safari friendly)
+/* CashBash Service Worker (GitHub Pages / iOS Safari hardened)
 
-   Goals:
-   - New deployments activate quickly (skipWaiting + clients.claim)
-   - Update signaling to the app (waiting -> UI banner)
-   - Cache versioning + cleanup to avoid iOS serving stale assets
-   - Network-first for navigations/documents (do NOT hard-cache index.html forever)
+  Goals:
+  - Fast + reliable updates on iOS PWA
+  - Avoid mixed-version asset issues
+  - Keep index.html network-first, but offline-capable
+  - Cache versioning + cleanup
+  - Small, predictable cache keys
 
-   Release process:
-   - Bump SW_VERSION on every release
-   - Also bump the query param in register('./sw.js?v=...')
+  Release process:
+  - Bump SW_VERSION on every release
+  - Also bump the query param in register('./sw.js?v=...')
 */
 
-const SW_VERSION = 'v5.5';
+const SW_VERSION = 'v5.6';
+
 const CACHE_STATIC = `cashbash-static-${SW_VERSION}`;
 const CACHE_PAGES  = `cashbash-pages-${SW_VERSION}`;
 const KEEP_CACHES = new Set([CACHE_STATIC, CACHE_PAGES]);
 
-// App shell / core assets. Keep this list small.
+// Core assets. Keep small and deterministic.
+// NOTE: Do NOT include index.html here to avoid split-brain (static vs pages cache).
 const STATIC_ASSETS = [
   './',
-  './index.html',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -27,10 +29,13 @@ const STATIC_ASSETS = [
   './icons/apple-touch-icon.png'
 ];
 
+function log(){ /* no-op in production */ }
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_STATIC);
-    await cache.addAll(STATIC_ASSETS);
+    // Precache core assets. If one fails, we still want install to complete on flaky networks.
+    await Promise.allSettled(STATIC_ASSETS.map((u) => cache.add(u)));
     self.skipWaiting();
   })());
 });
@@ -52,35 +57,74 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   const msg = event.data;
   if (!msg || typeof msg !== 'object') return;
-  if (msg.type === 'SKIP_WAITING') self.skipWaiting();
+
+  if (msg.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
 });
 
-async function networkFirstPage(req){
+function isSameOrigin(url){
+  return url.origin === self.location.origin;
+}
+
+function isHtmlRequest(req){
+  return req.mode === 'navigate' || req.destination === 'document' || (req.headers.get('accept') || '').includes('text/html');
+}
+
+function normalizePath(url){
+  // GitHub Pages + relative paths: keep pathname only.
+  // Ensure we treat / and /index.html as the same offline entry.
+  const p = url.pathname;
+  if (p.endsWith('/')) return p + 'index.html';
+  return p;
+}
+
+async function networkFirstHtml(req){
+  const url = new URL(req.url);
+  const cache = await caches.open(CACHE_PAGES);
+
+  // Always store the app shell under a stable key for offline boot.
+  const shellKey = new Request('./index.html');
+
   try {
-    const fresh = await fetch(req);
-    const cache = await caches.open(CACHE_PAGES);
-    // Store under a stable key so offline reload works.
-    cache.put('./index.html', fresh.clone());
+    // Avoid SW cache for HTML fetch; rely on browser HTTP cache + network.
+    const fresh = await fetch(req, { cache: 'no-store' });
+
+    // Only cache good responses.
+    if (fresh && fresh.ok) {
+      await cache.put(shellKey, fresh.clone());
+    }
+
     return fresh;
   } catch {
-    const cached = await caches.match('./index.html');
+    const cached = await cache.match(shellKey);
     if (cached) return cached;
-    return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+
+    return new Response('Offline', {
+      status: 503,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    });
   }
 }
 
 async function cacheFirstStatic(req){
-  const cached = await caches.match(req);
+  const cache = await caches.open(CACHE_STATIC);
+  const cached = await cache.match(req);
   if (cached) return cached;
 
   try {
     const fresh = await fetch(req);
-    const cache = await caches.open(CACHE_STATIC);
-    cache.put(req, fresh.clone());
+    // Cache only successful, basic responses.
+    if (fresh && fresh.ok) {
+      await cache.put(req, fresh.clone());
+    }
     return fresh;
   } catch {
-    const html = await caches.match('./index.html');
-    return html || new Response('Offline', { status: 503 });
+    // If offline and request is for something static, try to fall back to app shell.
+    const pages = await caches.open(CACHE_PAGES);
+    const shell = await pages.match(new Request('./index.html'));
+    return shell || new Response('Offline', { status: 503 });
   }
 }
 
@@ -90,15 +134,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // Cross-origin requests: let them go to the network unmodified.
-  if (url.origin !== self.location.origin) return;
+  // Let cross-origin go straight to network.
+  if (!isSameOrigin(url)) return;
 
-  // Network-first for navigations/documents.
-  if (req.mode === 'navigate' || req.destination === 'document'){
-    event.respondWith(networkFirstPage(req));
+  // HTML/navigation: network-first + offline shell.
+  if (isHtmlRequest(req)) {
+    event.respondWith(networkFirstHtml(req));
     return;
   }
 
-  // Cache-first for everything else we can cache.
+  // Everything else: cache-first.
   event.respondWith(cacheFirstStatic(req));
 });
