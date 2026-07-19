@@ -487,9 +487,9 @@
             <select id="newTripBase"></select>
           </div>
           <div>
-            <label for="newTripQuick">Schnellauswahl (mehrfach)</label>
-            <select id="newTripQuick" multiple size="6"></select>
-            <div class="small muted" style="margin-top:6px">Tipp: Mehrfachauswahl mit ⌘/Strg oder Tippen (mobil).</div>
+            <label>Schnellauswahl</label>
+            <div id="newTripQuickWrap" class="tabs" style="margin-top:6px"></div>
+            <div class="small muted" style="margin-top:6px">Tippen zum (De-)Aktivieren. Basiswährung ist immer dabei.</div>
           </div>
         </div>
 
@@ -2131,11 +2131,16 @@
         title: payload.title || 'Reise',
         baseCurrency: payload.baseCurrency || 'EUR',
         quickCurrencies: payload.quickCurrencies || ['EUR','USD','GBP','CHF'],
-        members: payload.members || [{ id: randomId('m'), name: state.user.name }],
+        members: payload.members || [],
         relayTopic: payload.relayTopic,
         ownerDeviceId: payload.ownerDeviceId || null,
         keySaltB64: payload.keySaltB64
       };
+
+      // Ensure joiner is present as a member so they can be selected in payer/participants.
+      if (!trip.members.some(m => m && m.name === state.user.name)){
+        trip.members.push({ id: randomId('m'), name: state.user.name });
+      }
 
       await idbSet('trips', trip.id, trip);
       await idbSet('meta','activeTripId', trip.id);
@@ -2159,10 +2164,22 @@
     await loadTripsMap();
 
     const keys = [...state.trips.keys()];
+
+    // Refresh button (re-sync + reload)
+    const header = `
+      <div class="pill" style="margin:10px 0; justify-content:space-between">
+        <div>
+          <b>Reisen</b>
+          <div class="small muted" style="margin-top:4px">Tippe „Aktualisieren“, wenn neue Personen nicht erscheinen.</div>
+        </div>
+        <button class="btn ghost small" id="btnTripsRefresh">Aktualisieren</button>
+      </div>
+    `;
+
     if (!keys.length){
-      $('tripList').innerHTML = '<div class="small muted">Keine Reisen.</div>';
+      $('tripList').innerHTML = header + '<div class="small muted">Keine Reisen.</div>';
     } else {
-      $('tripList').innerHTML = keys.map(k=>{
+      $('tripList').innerHTML = header + keys.map(k=>{
         const t = state.trips.get(k);
         const active = (k === state.activeTripId);
         const del = isTripOwner(t) ? `<button class="btn danger small" data-del="${escapeHtml(t.id)}">Löschen</button>` : '';
@@ -2180,6 +2197,22 @@
           </div>
         `;
       }).join('');
+    }
+
+    const refreshBtn = $('btnTripsRefresh');
+    if (refreshBtn){
+      refreshBtn.addEventListener('click', async ()=>{
+        toast('Aktualisiere…');
+        await loadTripsMap();
+        // If there is an active trip, restart sync to pick up membership/event changes.
+        const active = await idbGet('meta','activeTripId');
+        if (active && state.trips.get(active)){
+          state.activeTripId = active;
+          state.activeTrip = state.trips.get(active);
+          try { await startTripSync(state.activeTrip); } catch {}
+        }
+        await openTrips();
+      });
     }
 
     $('tripList').querySelectorAll('button[data-trip]').forEach(b=>{
@@ -2213,7 +2246,13 @@
           await idbSet('meta', `tripPass:${t.id}`, pass);
         }
 
-        // Share uses the existing invite modal + copy flow
+        // IMPORTANT: include current user as member when sharing/joining flows are used.
+        // This avoids the "new person can't select themselves" issue until we have a richer member-management UX.
+        if (!t.members.some(m => m.name === state.user.name)){
+          t.members.push({ id: randomId('m'), name: state.user.name });
+          await idbSet('trips', t.id, t);
+        }
+
         const payload = {
           v: 2,
           tripId: t.id,
@@ -2263,8 +2302,8 @@
 
   function fillNewTripCurrencyUI(){
     const baseSel = $('newTripBase');
-    const quickSel = $('newTripQuick');
-    if (!baseSel || !quickSel) return;
+    const wrap = $('newTripQuickWrap');
+    if (!baseSel || !wrap) return;
 
     const list = [...new Set([...COMMON_CCY])];
 
@@ -2278,13 +2317,33 @@
 
     const renderQuick = ()=>{
       const base = (baseSel.value || 'EUR').toUpperCase();
-      quickSel.innerHTML = '';
+      wrap.innerHTML = '';
+
+      const defaults = new Set(['EUR','USD','GBP','CHF', base]);
 
       for (const c of list){
-        const o = document.createElement('option');
-        o.value = c; o.textContent = c;
-        if (c === base || ['EUR','USD','GBP','CHF'].includes(c)) o.selected = true;
-        quickSel.appendChild(o);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = c;
+        b.dataset.ccy = c;
+
+        // default selected
+        b.dataset.active = defaults.has(c) ? '1' : '0';
+
+        // base is forced on
+        if (c === base){
+          b.dataset.active = '1';
+          b.classList.add('secondary');
+        }
+
+        b.onclick = ()=>{
+          const isBase = (b.dataset.ccy === (baseSel.value||'EUR').toUpperCase());
+          if (isBase) return; // cannot disable base
+          b.dataset.active = (b.dataset.active === '1') ? '0' : '1';
+        };
+
+        wrap.appendChild(b);
       }
     };
 
@@ -2296,9 +2355,9 @@
     const title = ($('newTripTitle')?.value || '').trim();
     const base = ($('newTripBase')?.value || 'EUR').trim().toUpperCase();
 
-    const quickSel = $('newTripQuick');
-    const selected = quickSel
-      ? Array.from(quickSel.selectedOptions || []).map(o=>String(o.value||'').toUpperCase()).filter(Boolean)
+    const wrap = $('newTripQuickWrap');
+    const selected = wrap
+      ? Array.from(wrap.querySelectorAll('[data-ccy][data-active="1"]')).map(el=>String(el.dataset.ccy||'').toUpperCase()).filter(Boolean)
       : [];
 
     const quick = [...new Set([base, ...selected])].filter(c=>c && c.length === 3);
@@ -2351,7 +2410,7 @@
 
   async function initSW(){
     if (!('serviceWorker' in navigator)) return;
-    const swUrl = './sw.js?v=5.3';
+    const swUrl = './sw.js?v=5.4';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
