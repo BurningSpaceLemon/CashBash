@@ -707,10 +707,13 @@
 
   function toast(msg){
     const t = $('toast');
+    if (!t) return;
     t.textContent = String(msg || '');
     t.classList.add('show');
+
+    // iOS PWA: sometimes timers or rapid transitions feel flaky; keep it visible a bit longer.
     clearTimeout(toast._t);
-    toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+    toast._t = setTimeout(()=>t.classList.remove('show'), 3200);
   }
 
   function showUpdateBanner(waitingWorker){
@@ -1165,7 +1168,14 @@
     return events;
   }
 
-  // ---------- FX (ECB + fallback + manual) ----------
+  // ---------- FX v2 (Trip-scoped: confirm-on-first-use + settlement review) ----------
+  // Old model used a global (device-wide) EUR-based cache.
+  // New model stores a confirmed rate per trip and currency (from -> trip.baseCurrency).
+
+  function fxTripKey(tripId, fromCcy, toCcy){
+    return `tripFx:${tripId}:${String(fromCcy||'').toUpperCase()}:${String(toCcy||'').toUpperCase()}`;
+  }
+
   async function fetchEcbDaily(){
     const url = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';
     const res = await fetch(url, { cache: 'no-store' });
@@ -1184,71 +1194,6 @@
     return { date, rates, source: 'ECB' };
   }
 
-  async function saveManualFx(){
-    const ccy = ($('manualFxCcy').value || '').trim().toUpperCase();
-    const rate = parseFloat(($('manualFxRate').value || '').replace(',','.'));
-    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
-    if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
-
-    let where = 'idb';
-    try {
-      where = await kvSet(`manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
-    } catch (e){
-      toast('Speichern nicht möglich.');
-      console.error(e);
-      return;
-    }
-
-    // Also write/merge a daily record for today so conversion has a concrete fxDate.
-    const date = new Date().toISOString().slice(0,10);
-    try {
-      const existing = await idbGet('fx', `ecbDaily:${date}`);
-      const mergedRates = {
-        ...(existing?.rates || {}),
-        EUR: 1,
-        [ccy]: rate
-      };
-      const daily = { date, source: 'manual', rates: mergedRates };
-      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-      await idbSet('meta','lastEcbDate', daily.date);
-
-      $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
-    } catch {
-      // Even if daily merge fails, the global manual rate is still stored.
-      $('ecbStatus').textContent = `Manuell gespeichert · (lokal) · 1 EUR = ${rate} ${ccy}`;
-    }
-
-    $('manualFx').hidden = true;
-    toast(where === 'cache' ? 'Kurs gespeichert (Offline-Speicher).' : 'Manueller Kurs gespeichert.');
-    renderAll();
-  }
-
-  async function fetchEcb(){
-    $('ecbStatus').textContent = 'Hole ECB…';
-    try {
-      const daily = await fetchEcbDaily();
-      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-      await idbSet('meta','lastEcbDate', daily.date);
-      $('ecbStatus').textContent = `ECB OK · ${daily.date} · ${Object.keys(daily.rates).length} Währungen`;
-      $('manualFx').hidden = true;
-      toast('ECB Kurs geladen.');
-    } catch {
-      const lastDate = await idbGet('meta','lastEcbDate');
-      if (lastDate){
-        $('ecbStatus').textContent = `Offline/Fallback · letzter Kurs: ${lastDate}`;
-        $('manualFx').hidden = true;
-        toast('ECB nicht erreichbar — Fallback verfügbar.');
-      } else {
-        $('ecbStatus').textContent = 'ECB nicht erreichbar und kein gespeicherter Kurs vorhanden.';
-        $('manualFx').hidden = false;
-        const settle = $('settleCcy').value || (state.activeTrip?.baseCurrency || 'EUR');
-        $('manualFxCcy').value = settle;
-        $('manualFxRate').value = '';
-        toast('Bitte Kurs manuell eingeben.');
-      }
-    }
-  }
-
   function fxConvertViaEur(amount, from, to, rates){
     if (from === to) return amount;
     if (!rates || !rates[from] || !rates[to]) throw new Error('Missing rate');
@@ -1259,6 +1204,136 @@
 
   function round2(n){
     return Math.round((Number(n) || 0) * 100) / 100;
+  }
+
+  async function getOrConfirmTripRate(trip, fromCcy){
+    const from = String(fromCcy||'').trim().toUpperCase();
+    const to = String(trip?.baseCurrency||'EUR').trim().toUpperCase();
+    if (!trip || !from || from.length !== 3 || from === to) return null;
+
+    const key = fxTripKey(trip.id, from, to);
+    const existing = await idbGet('fx', key);
+    if (existing && Number.isFinite(existing.rate) && existing.rate > 0) return existing;
+
+    // Suggest from ECB (best effort)
+    let suggestionRate = null;
+    let suggestionDate = null;
+    let suggestionSource = null;
+
+    try {
+      const daily = await fetchEcbDaily();
+      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+      await idbSet('meta','lastEcbDate', daily.date);
+      suggestionRate = fxConvertViaEur(1, from, to, daily.rates); // 1 FROM = x TO
+      suggestionDate = daily.date;
+      suggestionSource = 'ECB';
+    } catch {
+      const lastDate = await idbGet('meta','lastEcbDate');
+      if (lastDate){
+        const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+        if (daily?.rates?.[from] && daily?.rates?.[to]){
+          suggestionRate = fxConvertViaEur(1, from, to, daily.rates);
+          suggestionDate = daily.date;
+          suggestionSource = daily.source || 'ECB';
+        }
+      }
+    }
+
+    // MVP UI: prompt. (Later: replace with a proper modal.)
+    const dateLabel = suggestionDate ? ` (Stand: ${suggestionDate})` : '';
+    const prefill = Number.isFinite(suggestionRate) ? String(Math.round(suggestionRate*1000000)/1000000) : '';
+    const defaultMode = 'A';
+    const mode = (prompt(
+      `Wechselkurs-Format wählen:\nA) 1 ${from} = X ${to}\nB) 1 ${to} = X ${from}\n\nGib A oder B ein:`,
+      defaultMode
+    ) || '').trim().toUpperCase();
+
+    const effMode = (mode === 'B') ? 'B' : 'A';
+
+    const promptText = effMode === 'A'
+      ? `Wechselkurs für diese Reise festlegen:\n1 ${from} = ? ${to}${dateLabel}\n\nVorschlag${suggestionSource ? ' aus ' + suggestionSource : ''}: ${prefill || '—'}\n\nGib den Kurs ein (oder Abbrechen, um zurückzugehen).`
+      : `Wechselkurs für diese Reise festlegen:\n1 ${to} = ? ${from}${dateLabel}\n\nHinweis: Wir speichern intern immer 1 ${from} = X ${to}.\n\nGib den Kurs ein (oder Abbrechen, um zurückzugehen).`;
+
+    const defaultVal = effMode === 'A'
+      ? prefill
+      : (Number.isFinite(suggestionRate) && suggestionRate > 0
+          ? String(Math.round((1/suggestionRate)*1000000)/1000000)
+          : '');
+
+    const input = prompt(promptText, defaultVal);
+    if (input === null){
+      toast('Kurs erforderlich — Ausgabe wurde nicht gespeichert.');
+      return null;
+    }
+
+    const raw = parseFloat(String(input).replace(',','.'));
+    if (!Number.isFinite(raw) || raw <= 0){
+      toast('Ungültiger Kurs.');
+      return null;
+    }
+
+    const rate = effMode === 'A' ? raw : (1 / raw); // store canonical: TO per 1 FROM
+
+    const rec = {
+      tripId: trip.id,
+      from,
+      to,
+      rate,
+      source: (Number.isFinite(suggestionRate) ? 'ECB_CONFIRMED' : 'MANUAL'),
+      rateDate: suggestionDate,
+      confirmedAt: Date.now(),
+      confirmedBy: state.user.deviceId
+    };
+
+    await idbSet('fx', key, rec);
+    toast(`Kurs gespeichert: 1 ${from} = ${rate} ${to}`);
+    return rec;
+  }
+
+  async function listTripRates(trip){
+    if (!trip) return [];
+    const keys = await idbKeys('fx');
+    const out = [];
+    for (const k of keys){
+      const ks = String(k||'');
+      if (!ks.startsWith(`tripFx:${trip.id}:`)) continue;
+      const v = await idbGet('fx', k);
+      if (v && v.from && v.to && Number.isFinite(v.rate)) out.push(v);
+    }
+    out.sort((a,b)=>String(a.from).localeCompare(String(b.from)));
+    return out;
+  }
+
+  async function reviewTripRatesAtSettlement(trip){
+    const rates = await listTripRates(trip);
+    if (!rates.length) return;
+
+    const to = String(trip.baseCurrency||'EUR').toUpperCase();
+    for (const r of rates){
+      const from = String(r.from||'').toUpperCase();
+      const pre = String(r.rate);
+      const inp = prompt(
+        `Abschluss: Kurs prüfen\n1 ${from} = ? ${to}\n\nAktuell: ${pre}\n\nEnter = übernehmen, oder neuen Kurs eingeben:`,
+        pre
+      );
+      if (inp === null) continue;
+      const val = parseFloat(String(inp).replace(',','.'));
+      if (!Number.isFinite(val) || val <= 0) continue;
+      if (Math.abs(val - r.rate) < 1e-12) continue;
+
+      const key = fxTripKey(trip.id, from, to);
+      await idbSet('fx', key, { ...r, rate: val, source: 'MANUAL', confirmedAt: Date.now(), confirmedBy: state.user.deviceId });
+    }
+  }
+
+  async function convertAmountUsingTripRate(trip, amount, fromCcy){
+    const from = String(fromCcy||'').toUpperCase();
+    const to = String(trip.baseCurrency||'EUR').toUpperCase();
+    if (from === to) return amount;
+
+    const r = await idbGet('fx', fxTripKey(trip.id, from, to));
+    if (!r || !Number.isFinite(r.rate) || r.rate <= 0) throw new Error('Missing trip rate');
+    return amount * r.rate;
   }
 
   async function settleTripFinal(){
@@ -1329,33 +1404,26 @@
       return;
     }
 
-    // 3) Ensure we have rates (ECB or fallback) for FX conversion.
-    await fetchEcb();
+    // 3) Review stored trip FX rates one more time at settlement (user can adjust)
+    await reviewTripRatesAtSettlement(trip);
 
-    const settleCcy = trip.baseCurrency; // convert everything to base
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){ toast('Kein Kurs verfügbar.'); return; }
+    const settleCcy = trip.baseCurrency;
 
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (!daily || !daily.rates){ toast('Kursdaten fehlen.'); return; }
-
-    // 4) Convert every expense to base using ECB rates
+    // 4) Convert every expense to base using per-trip rates
     const baseExpenses = [];
     for (const ev of expensesRaw){
       const d = ev.data;
       const amt = Number(d.amount) || 0;
       const from = d.ccy;
-      const to = settleCcy;
 
-      let converted;
-      try {
-        converted = fxConvertViaEur(amt, from, to, daily.rates);
-      } catch {
-        $('manualFx').hidden = false;
-        $('manualFxCcy').value = from;
-        mSettle.showModal();
-        toast(`Kurs fehlt für ${from}. Bitte manuell speichern und erneut abschließen.`);
-        return;
+      let converted = amt;
+      if (from !== settleCcy){
+        try {
+          converted = await convertAmountUsingTripRate(trip, amt, from);
+        } catch {
+          toast(`Kurs fehlt für ${from}. Bitte beim Erfassen einmal Kurs bestätigen (oder in Einstellungen setzen).`);
+          return;
+        }
       }
 
       baseExpenses.push({
@@ -1364,16 +1432,19 @@
       });
     }
 
-    // 5) Save snapshot
+    // 5) Save snapshot (store used trip rates)
+    const used = {};
+    for (const r of await listTripRates(trip)) used[r.from] = r.rate;
+
     const snapshot = {
       id: randomId('snap'),
       tripId: trip.id,
       t: Date.now(),
       baseCurrency: trip.baseCurrency,
       settleCurrency: settleCcy,
-      fxDate: daily.date,
-      fxSource: daily.source,
-      rates: daily.rates
+      fxDate: new Date().toISOString().slice(0,10),
+      fxSource: 'tripRates',
+      tripRates: used
     };
     await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
 
@@ -1386,8 +1457,8 @@
       data: {
         snapshotId: snapshot.id,
         settleCurrency: settleCcy,
-        fxDate: daily.date,
-        fxSource: daily.source
+        fxDate: snapshot.fxDate,
+        fxSource: snapshot.fxSource
       }
     };
 
@@ -1403,39 +1474,9 @@
     renderAll();
   }
 
-  // Keep existing manual flow (modal button) as a lightweight "save snapshot" action
+  // Snapshot is created automatically during settlement in FX v2.
   async function finalizeSnapshot(){
-    const trip = state.activeTrip;
-    if (!trip) return;
-
-    const settleCcy = $('settleCcy').value;
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){ toast('Bitte zuerst ECB Kurs holen oder manuell speichern.'); return; }
-
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (!daily){ toast('Kursdaten fehlen.'); return; }
-
-    if (daily.source === 'manual' && settleCcy !== 'EUR' && !daily.rates?.[settleCcy]){
-      $('manualFx').hidden = false;
-      $('manualFxCcy').value = settleCcy;
-      toast(`Manueller Kurs fehlt für ${settleCcy}.`);
-      return;
-    }
-
-    const snapshot = {
-      id: randomId('snap'),
-      tripId: trip.id,
-      t: Date.now(),
-      baseCurrency: trip.baseCurrency,
-      settleCurrency: settleCcy,
-      fxDate: daily.date,
-      fxSource: daily.source,
-      rates: daily.rates
-    };
-
-    await idbSet('fx', `snapshot:${snapshot.id}`, snapshot);
-    $('ecbStatus').textContent = `Snapshot gespeichert · ${snapshot.fxDate} · Quelle: ${snapshot.fxSource} · Ziel: ${snapshot.settleCurrency}`;
-    toast('Snapshot gespeichert.');
+    toast('Snapshot wird beim Abschluss automatisch erstellt.');
   }
 
   // ---------- UI: tabs ----------
@@ -1817,40 +1858,7 @@
   }
 
   // ---------- Actions ----------
-  async function ensureFxForCurrency(ccy){
-    const cur = String(ccy || '').trim().toUpperCase();
-    if (!cur) return null;
-
-    // Always keep EUR in rates.
-    if (cur === 'EUR') return null;
-
-    // 1) Try online fetch first (updates lastEcbDate + stores daily)
-    await fetchEcb();
-
-    const lastDate = await idbGet('meta','lastEcbDate');
-    if (lastDate){
-      const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-      if (daily && daily.rates && daily.rates[cur]) return daily;
-    }
-
-    // 2) Global manual fallback (device-wide)
-    const manual = await kvGet(`manualRate:${cur}`);
-    if (manual && Number.isFinite(manual.ratePerEur) && manual.ratePerEur > 0){
-      const date = new Date().toISOString().slice(0,10);
-      const daily = { date, source: 'manual', rates: { EUR: 1, [cur]: manual.ratePerEur } };
-      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
-      await idbSet('meta','lastEcbDate', daily.date);
-      return daily;
-    }
-
-    // 3) Missing rate -> require manual input
-    $('manualFx').hidden = false;
-    $('manualFxCcy').value = cur;
-    $('manualFxRate').value = '';
-    mSettle.showModal();
-    toast(`Kurs fehlt für ${cur}. Bitte manuell speichern.`);
-    return null;
-  }
+  // (deprecated) ensureFxForCurrency removed in FX v2.
 
   async function addExpense(){
     const trip = state.activeTrip;
@@ -1875,13 +1883,10 @@
     if (!what){ toast('Bitte "Wofür" ausfüllen.'); return; }
     if (!participants.length){ toast('Mindestens eine Person auswählen.'); return; }
 
-    // If FX, ensure we have a rate available (ECB or manual)
+    // If FX, confirm trip-specific rate once (auto-suggested from ECB, user can adjust)
     if (ccy !== trip.baseCurrency){
-      const daily = await ensureFxForCurrency(ccy);
-      if (!daily){
-        // user must provide manual rate in modal, then retry saving
-        return;
-      }
+      const rec = await getOrConfirmTripRate(trip, ccy);
+      if (!rec) return; // user cancelled/invalid
     }
 
     const expenseId = randomId('x');
@@ -2270,7 +2275,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=4.5';
+    const swUrl = './sw.js?v=4.6';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2321,17 +2326,30 @@
 
     $('btnNewTrip').addEventListener('click', newTrip);
 
-    $('btnFetchEcb').addEventListener('click', fetchEcb);
+    // ECB fetch button is deprecated in FX v2 (rates are fetched on first FX use).
+    // Keep the UI button as a friendly shortcut to preload ECB, but don't depend on it.
+    $('btnFetchEcb').addEventListener('click', async ()=>{
+      try {
+        const daily = await fetchEcbDaily();
+        await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+        await idbSet('meta','lastEcbDate', daily.date);
+        $('ecbStatus').textContent = `ECB OK · ${daily.date} · ${Object.keys(daily.rates).length} Währungen`;
+        toast('ECB Kurs geladen.');
+      } catch {
+        toast('ECB nicht erreichbar.');
+      }
+    });
+
     $('btnFinalize').addEventListener('click', finalizeSnapshot);
 
-    // Manual FX save button lives inside the settle modal
+    // Manual FX save button is no longer used (trip-scoped FX is confirmed on first use).
+    // Keep it wired to a small helper (creates/updates a trip FX rate) for compatibility.
     const manualBtn = $('btnSaveManualFx');
     if (manualBtn) manualBtn.addEventListener('click', async ()=>{
       try {
-        toast('Speichere Kurs…');
-        await saveManualFx();
+        await openTripFxEditorPrompt();
       } catch (e){
-        toast('Kurs speichern fehlgeschlagen.');
+        toast('Kurs-Editor fehlgeschlagen.');
         console.error(e);
       }
     });
@@ -2352,6 +2370,19 @@
         console.error(e);
       }
     });
+
+    // --- Hard iOS debugging: global click beacon (only visible as toast) ---
+    // This helps distinguish "handler not wired" vs "handler wired but storage fails".
+    document.addEventListener('click', (e)=>{
+      try {
+        const b = e.target && e.target.closest ? e.target.closest('button') : null;
+        if (!b) return;
+        const id = b.id || '(no-id)';
+        if (id === 'btnSaveManualFx' || id === 'btnSettingsSaveFx' || id === 'btnSettingsClearFx'){
+          toast('Click: ' + id);
+        }
+      } catch {}
+    }, { capture: true });
 
     $('btnOnboardCreate').addEventListener('click', async ()=>{
       mOnboarding.close();
