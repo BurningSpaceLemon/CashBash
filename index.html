@@ -343,6 +343,7 @@
     </div>
 
     <button class="btn ghost" id="btnTripsHeader">Reisen</button>
+    <button class="btn ghost" id="btnSettings" aria-label="Einstellungen" title="Einstellungen" style="min-width:44px;padding-left:12px;padding-right:12px">⚙︎</button>
     <button class="btn ghost" id="btnProfile">Profil</button>
   </div>
 </header>
@@ -483,6 +484,44 @@
     <div class="row2" style="margin-top:12px">
       <button class="btn secondary" id="btnOnboardCreate">Reise erstellen</button>
       <button class="btn" id="btnOnboardJoin">Mit Code beitreten</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="modalSettings">
+  <div class="modalHead">
+    <div>
+      <div class="eyebrow">Einstellungen</div>
+      <div style="font-family:var(--display);font-weight:700">Währungskurse (manuell)</div>
+    </div>
+    <button class="btn ghost small" data-close>Schließen</button>
+  </div>
+  <div class="modal">
+    <div class="small">Manuelle Kurse sind global gespeichert (geräteweit). Format: <span class="kbd">1 EUR = X</span> in Zielwährung.</div>
+
+    <div class="row2" style="margin-top:12px">
+      <div>
+        <label for="settingsFxCcy">Währung</label>
+        <input id="settingsFxCcy" placeholder="z.B. USD" />
+      </div>
+      <div>
+        <label for="settingsFxRate">Kurs</label>
+        <input id="settingsFxRate" inputmode="decimal" placeholder="1 EUR = X" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn secondary" id="btnSettingsSaveFx">Speichern/Update</button>
+      <button class="btn danger" id="btnSettingsClearFx">Löschen</button>
+    </div>
+
+    <div class="list" style="margin-top:14px">
+      <div class="head">
+        <b>Gespeicherte manuelle Kurse</b>
+        <span class="small">Tippe auf einen Eintrag zum Bearbeiten</span>
+      </div>
+      <div style="padding: 12px 14px" id="settingsFxList">—</div>
     </div>
   </div>
 </dialog>
@@ -1103,17 +1142,17 @@
     if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
     if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
 
-    // Manual always means: 1 EUR = rate CCY (ECB style)
-    const date = new Date().toISOString().slice(0,10);
+    // Persist global manual rate (device-wide)
+    await idbSet('fx', `manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
 
-    // Merge into existing daily if present (so we can store multiple manual currencies for the same day)
+    // Also write/merge a daily record for today so conversion has a concrete fxDate.
+    const date = new Date().toISOString().slice(0,10);
     const existing = await idbGet('fx', `ecbDaily:${date}`);
     const mergedRates = {
       ...(existing?.rates || {}),
       EUR: 1,
       [ccy]: rate
     };
-
     const daily = { date, source: 'manual', rates: mergedRates };
     await idbSet('fx', `ecbDaily:${daily.date}`, daily);
     await idbSet('meta','lastEcbDate', daily.date);
@@ -1121,7 +1160,6 @@
     $('ecbStatus').textContent = `Manuell gespeichert · ${daily.date} · 1 EUR = ${rate} ${ccy}`;
     $('manualFx').hidden = true;
 
-    // If user opened modal due to missing FX for an expense/settlement, re-render so buttons become usable.
     toast('Manueller Kurs gespeichert.');
     renderAll();
   }
@@ -1377,6 +1415,7 @@
   }
 
   const mOnboarding = wireModal('modalOnboarding');
+  const mSettings = wireModal('modalSettings');
   const mProfile = wireModal('modalProfile');
   const mInvite = wireModal('modalInvite');
   const mJoin = wireModal('modalJoin');
@@ -1726,24 +1765,29 @@
     // Always keep EUR in rates.
     if (cur === 'EUR') return null;
 
-    // Try online fetch first (updates lastEcbDate + stores daily)
+    // 1) Try online fetch first (updates lastEcbDate + stores daily)
     await fetchEcb();
 
     const lastDate = await idbGet('meta','lastEcbDate');
-    if (!lastDate){
-      $('manualFx').hidden = false;
-      $('manualFxCcy').value = cur;
-      mSettle.showModal();
-      toast(`Kein Kurs verfügbar. Bitte ${cur} manuell speichern.`);
-      return null;
+    if (lastDate){
+      const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
+      if (daily && daily.rates && daily.rates[cur]) return daily;
     }
 
-    const daily = await idbGet('fx', `ecbDaily:${lastDate}`);
-    if (daily && daily.rates && daily.rates[cur]) return daily;
+    // 2) Global manual fallback (device-wide)
+    const manual = await idbGet('fx', `manualRate:${cur}`);
+    if (manual && Number.isFinite(manual.ratePerEur) && manual.ratePerEur > 0){
+      const date = new Date().toISOString().slice(0,10);
+      const daily = { date, source: 'manual', rates: { EUR: 1, [cur]: manual.ratePerEur } };
+      await idbSet('fx', `ecbDaily:${daily.date}`, daily);
+      await idbSet('meta','lastEcbDate', daily.date);
+      return daily;
+    }
 
-    // Missing rate -> require manual
+    // 3) Missing rate -> require manual input
     $('manualFx').hidden = false;
     $('manualFxCcy').value = cur;
+    $('manualFxRate').value = '';
     mSettle.showModal();
     toast(`Kurs fehlt für ${cur}. Bitte manuell speichern.`);
     return null;
@@ -1817,6 +1861,86 @@
     $('profileName').value = state.user.name || '';
     $('profileDeviceId').textContent = state.user.deviceId || '—';
     mProfile.showModal();
+  }
+
+  // ---------- Settings (Global manual FX) ----------
+  function fxKeyFromCcy(ccy){
+    const cur = String(ccy||'').trim().toUpperCase();
+    if (!cur || cur.length !== 3) return null;
+    return `manualRate:${cur}`;
+  }
+
+  async function listManualFx(){
+    const keys = await idbKeys('fx');
+    const out = [];
+    for (const k of keys){
+      const ks = String(k||'');
+      if (!ks.startsWith('manualRate:')) continue;
+      const v = await idbGet('fx', k);
+      if (v && v.ccy && Number.isFinite(v.ratePerEur)) out.push(v);
+    }
+    out.sort((a,b)=>String(a.ccy).localeCompare(String(b.ccy)));
+    return out;
+  }
+
+  async function renderSettings(){
+    const list = await listManualFx();
+    const el = $('settingsFxList');
+    if (!list.length){
+      el.innerHTML = '<span class="muted">Keine manuellen Kurse gespeichert.</span>';
+      return;
+    }
+    el.innerHTML = list.map(r=>{
+      const when = r.t ? new Date(r.t).toLocaleString() : '—';
+      return `
+        <div class="pill" style="margin:10px 0; cursor:pointer" data-ccy="${escapeHtml(r.ccy)}" role="button" tabindex="0" aria-label="${escapeHtml(r.ccy)} bearbeiten">
+          <div>
+            <b>${escapeHtml(r.ccy)}</b>
+            <div class="small muted" style="margin-top:4px">zuletzt: ${escapeHtml(when)}</div>
+          </div>
+          <div class="money">1 EUR = ${escapeHtml(String(r.ratePerEur))} ${escapeHtml(r.ccy)}</div>
+        </div>
+      `;
+    }).join('');
+
+    el.querySelectorAll('[data-ccy]').forEach(row=>{
+      const pick = ()=>{
+        const c = row.getAttribute('data-ccy');
+        $('settingsFxCcy').value = c;
+        // best-effort fill rate
+        listManualFx().then(all=>{
+          const found = all.find(x=>x.ccy===c);
+          if (found) $('settingsFxRate').value = String(found.ratePerEur);
+        });
+      };
+      row.addEventListener('click', pick);
+      row.addEventListener('keydown', (e)=>{ if (e.key==='Enter' || e.key===' '){ e.preventDefault(); pick(); } });
+    });
+  }
+
+  async function openSettings(){
+    $('settingsFxCcy').value = '';
+    $('settingsFxRate').value = '';
+    await renderSettings();
+    mSettings.showModal();
+  }
+
+  async function settingsSaveFx(){
+    const ccy = ($('settingsFxCcy').value || '').trim().toUpperCase();
+    const rate = parseFloat(($('settingsFxRate').value || '').replace(',','.'));
+    if (!ccy || ccy.length !== 3){ toast('Bitte eine Währung angeben (z.B. USD).'); return; }
+    if (!Number.isFinite(rate) || rate <= 0){ toast('Bitte einen gültigen Kurs eingeben.'); return; }
+    await idbSet('fx', `manualRate:${ccy}`, { ccy, ratePerEur: rate, t: Date.now() });
+    toast('Manueller Kurs gespeichert.');
+    await renderSettings();
+  }
+
+  async function settingsClearFx(){
+    const ccy = ($('settingsFxCcy').value || '').trim().toUpperCase();
+    if (!ccy || ccy.length !== 3){ toast('Bitte erst eine Währung wählen.'); return; }
+    await idbDel('fx', `manualRate:${ccy}`);
+    toast('Manueller Kurs gelöscht.');
+    await renderSettings();
   }
 
   async function saveProfile(){
@@ -2040,7 +2164,7 @@
     if (!('serviceWorker' in navigator)) return;
 
     // Bump query param on every release to help iOS notice.
-    const swUrl = './sw.js?v=4.1';
+    const swUrl = './sw.js?v=4.2';
 
     try {
       const reg = await navigator.serviceWorker.register(swUrl);
@@ -2075,6 +2199,7 @@
     $('tabDashboard').addEventListener('click', ()=>setTab('dashboard'));
 
     $('btnTripsHeader').addEventListener('click', openTrips);
+    $('btnSettings').addEventListener('click', openSettings);
     $('btnProfile').addEventListener('click', openProfile);
     $('btnSaveProfile').addEventListener('click', saveProfile);
 
@@ -2104,6 +2229,12 @@
         console.error(e);
       }
     });
+
+    const btnSettingsSaveFx = $('btnSettingsSaveFx');
+    if (btnSettingsSaveFx) btnSettingsSaveFx.addEventListener('click', settingsSaveFx);
+
+    const btnSettingsClearFx = $('btnSettingsClearFx');
+    if (btnSettingsClearFx) btnSettingsClearFx.addEventListener('click', settingsClearFx);
 
     const settleBtn = $('btnSettle');
     if (settleBtn) settleBtn.addEventListener('click', async ()=>{
